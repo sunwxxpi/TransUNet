@@ -4,12 +4,12 @@ import nibabel as nib
 import h5py
 from tqdm import tqdm
 
-images_val_dir = '../data/nnUNet_raw/Dataset001_COCA/imagesVal'
-labels_val_dir = '../data/nnUNet_raw/Dataset001_COCA/labelsVal'
-output_dir = '../data//COCA/test_vol_h5'
+images_val_dir = './data/nnUNet_raw/Dataset001_COCA/imagesVal'
+labels_val_dir = './data/nnUNet_raw/Dataset001_COCA/labelsVal'
+output_dir = './data/COCA/test_vol_h5'
 os.makedirs(output_dir, exist_ok=True)
 
-val_txt = open('../data/COCA/test_vol.txt', 'w')
+val_txt = open('./data/COCA/lists_COCA/test_vol.txt', 'w')
 
 image_files = sorted(os.listdir(images_val_dir))
 

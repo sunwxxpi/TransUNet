@@ -3,12 +3,12 @@ import numpy as np
 import nibabel as nib
 from tqdm import tqdm
 
-images_tr_dir = '../data/nnUNet_raw/Dataset001_COCA/imagesTr'
-labels_tr_dir = '../data/nnUNet_raw/Dataset001_COCA/labelsTr'
-output_dir = '../data/COCA/train_npz'
+images_tr_dir = './data/nnUNet_raw/Dataset001_COCA/imagesTr'
+labels_tr_dir = './data/nnUNet_raw/Dataset001_COCA/labelsTr'
+output_dir = './data/COCA/train_npz'
 os.makedirs(output_dir, exist_ok=True)
 
-train_txt = open('../data/COCA/train.txt', 'w')
+train_txt = open('./data/COCA/lists_COCA/train.txt', 'w')
 
 image_files = sorted(os.listdir(images_tr_dir))
 
