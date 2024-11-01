@@ -1,22 +1,22 @@
+import os
+import sys
+import random
 import argparse
 import logging
-import os
-import random
-import sys
 import numpy as np
 import torch
 import torch.backends.cudnn as cudnn
-import torch.nn as nn
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from datasets.dataset_synapse import Synapse_dataset
+from datasets.dataset_synapse import Synapse_dataset, RandomGenerator
+from datasets.dataset_coca import COCA_dataset, RandomGenerator
 from utils import test_single_volume
 from networks.vit_seg_modeling import VisionTransformer as ViT_seg
 from networks.vit_seg_modeling import CONFIGS as CONFIGS_ViT_seg
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--volume_path', type=str,
-                    default='../data/Synapse/test_vol_h5', help='root dir for validation volume data')  # for acdc volume_path=root_dir
+                    default='../data/Synape/test_vol_h5', help='root dir for validation volume data')
 parser.add_argument('--dataset', type=str,
                     default='Synapse', help='experiment_name')
 parser.add_argument('--num_classes', type=int,
@@ -25,7 +25,7 @@ parser.add_argument('--list_dir', type=str,
                     default='./lists/lists_Synapse', help='list dir')
 
 parser.add_argument('--max_iterations', type=int,default=20000, help='maximum epoch number to train')
-parser.add_argument('--max_epochs', type=int, default=30, help='maximum epoch number to train')
+parser.add_argument('--max_epochs', type=int, default=500, help='maximum epoch number to train')
 parser.add_argument('--batch_size', type=int, default=24,
                     help='batch_size per gpu')
 parser.add_argument('--img_size', type=int, default=224, help='input patch size of network input')
@@ -85,6 +85,13 @@ if __name__ == "__main__":
             'num_classes': 9,
             'z_spacing': 1,
         },
+        'COCA': {
+            'Dataset': COCA_dataset,
+            'volume_path': '../data/COCA/test_vol_h5',
+            'list_dir': './lists/lists_COCA',
+            'num_classes': 4,
+            'z_spacing': 3,
+        },
     }
     dataset_name = args.dataset
     args.num_classes = dataset_config[dataset_name]['num_classes']
@@ -136,5 +143,3 @@ if __name__ == "__main__":
     else:
         test_save_path = None
     inference(args, net, test_save_path)
-
-
