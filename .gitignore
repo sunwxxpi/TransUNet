@@ -4,6 +4,9 @@ __pycache__
 
 .DS_Store
 
+data
+model
+
 lists
 predictions
 test_log
