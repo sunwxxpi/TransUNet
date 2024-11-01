@@ -66,7 +66,6 @@ def inference(args, model, test_save_path=None):
 
 
 if __name__ == "__main__":
-
     if not args.deterministic:
         cudnn.benchmark = True
         cudnn.deterministic = False
@@ -110,8 +109,6 @@ if __name__ == "__main__":
     snapshot_path = snapshot_path + '_skip' + str(args.n_skip)
     snapshot_path = snapshot_path + '_vitpatch' + str(args.vit_patches_size) if args.vit_patches_size!=16 else snapshot_path
     snapshot_path = snapshot_path + '_epo' + str(args.max_epochs) if args.max_epochs != 30 else snapshot_path
-    if dataset_name == 'ACDC':  # using max_epoch instead of iteration to control training duration
-        snapshot_path = snapshot_path + '_' + str(args.max_iterations)[0:2] + 'k' if args.max_iterations != 30000 else snapshot_path
     snapshot_path = snapshot_path+'_bs'+str(args.batch_size)
     snapshot_path = snapshot_path + '_lr' + str(args.base_lr) if args.base_lr != 0.01 else snapshot_path
     snapshot_path = snapshot_path + '_'+str(args.img_size)
@@ -142,9 +139,10 @@ if __name__ == "__main__":
     logging.info(snapshot_name)
 
     if args.is_savenii:
-        args.test_save_dir = '../predictions'
+        args.test_save_dir = './predictions'
         test_save_path = os.path.join(args.test_save_dir, args.exp, snapshot_name)
         os.makedirs(test_save_path, exist_ok=True)
     else:
         test_save_path = None
+
     inference(args, net, test_save_path)
