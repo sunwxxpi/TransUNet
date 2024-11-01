@@ -84,7 +84,7 @@ if __name__ == "__main__":
             'volume_path': '../data/Synapse/test_vol_h5',
             'list_dir': './lists/lists_Synapse',
             'num_classes': 9,
-            'z_spacing': 1,
+            'z_spacing': 3,
         },
         'COCA': {
             'Dataset': COCA_dataset,
