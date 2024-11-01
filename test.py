@@ -5,6 +5,7 @@ import argparse
 import logging
 import numpy as np
 import torch
+import torch.nn as nn
 import torch.backends.cudnn as cudnn
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -126,7 +127,11 @@ if __name__ == "__main__":
 
     snapshot = os.path.join(snapshot_path, 'best_model.pth')
     if not os.path.exists(snapshot): snapshot = snapshot.replace('best_model', 'epoch_'+str(args.max_epochs-1))
+    
     net.load_state_dict(torch.load(snapshot))
+    if torch.cuda.device_count() > 1:
+        net = nn.DataParallel(net)
+        
     snapshot_name = snapshot_path.split('/')[-1]
 
     log_folder = './test_log/test_log_' + args.exp

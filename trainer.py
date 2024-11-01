@@ -92,14 +92,24 @@ def trainer_synapse(args, model, snapshot_path):
 
         save_interval = 25
         if epoch_num > int(max_epoch / 5) and (epoch_num + 1) % save_interval == 0:
-            save_mode_path = os.path.join(snapshot_path, 'epoch_' + str(epoch_num) + '.pth')
-            torch.save(model.state_dict(), save_mode_path)
-            logging.info("save model to {}".format(save_mode_path))
+            save_model_path = os.path.join(snapshot_path, 'epoch_' + str(epoch_num) + '.pth')
+            
+            if isinstance(model, nn.DataParallel):
+                torch.save(model.module.state_dict(), save_model_path)
+            else:
+                torch.save(model.state_dict(), save_model_path)
+            
+            logging.info("save model to {}".format(save_model_path))
 
         if epoch_num >= max_epoch - 1:
-            save_mode_path = os.path.join(snapshot_path, 'epoch_' + str(epoch_num) + '.pth')
-            torch.save(model.state_dict(), save_mode_path)
-            logging.info("save model to {}".format(save_mode_path))
+            save_model_path = os.path.join(snapshot_path, 'epoch_' + str(epoch_num) + '.pth')
+            
+            if isinstance(model, nn.DataParallel):
+                torch.save(model.module.state_dict(), save_model_path)
+            else:
+                torch.save(model.state_dict(), save_model_path)
+                
+            logging.info("save model to {}".format(save_model_path))
             
             iterator.close()
             break
@@ -185,14 +195,24 @@ def trainer_coca(args, model, snapshot_path):
 
         save_interval = 25
         if epoch_num > int(max_epoch / 5) and (epoch_num + 1) % save_interval == 0:
-            save_mode_path = os.path.join(snapshot_path, 'epoch_' + str(epoch_num) + '.pth')
-            torch.save(model.state_dict(), save_mode_path)
-            logging.info("save model to {}".format(save_mode_path))
+            save_model_path = os.path.join(snapshot_path, 'epoch_' + str(epoch_num) + '.pth')
+            
+            if isinstance(model, nn.DataParallel):
+                torch.save(model.module.state_dict(), save_model_path)
+            else:
+                torch.save(model.state_dict(), save_model_path)
+            
+            logging.info("save model to {}".format(save_model_path))
 
         if epoch_num >= max_epoch - 1:
-            save_mode_path = os.path.join(snapshot_path, 'epoch_' + str(epoch_num) + '.pth')
-            torch.save(model.state_dict(), save_mode_path)
-            logging.info("save model to {}".format(save_mode_path))
+            save_model_path = os.path.join(snapshot_path, 'epoch_' + str(epoch_num) + '.pth')
+            
+            if isinstance(model, nn.DataParallel):
+                torch.save(model.module.state_dict(), save_model_path)
+            else:
+                torch.save(model.state_dict(), save_model_path)
+                
+            logging.info("save model to {}".format(save_model_path))
             
             iterator.close()
             break
