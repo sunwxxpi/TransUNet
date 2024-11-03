@@ -21,7 +21,7 @@ def trainer_synapse(args, model, snapshot_path):
     
     base_lr = args.base_lr
     num_classes = args.num_classes
-    batch_size = args.batch_size * args.n_gpu
+    batch_size = args.batch_size
     
     db_train = Synapse_dataset(base_dir=args.root_path, 
                                list_dir=args.list_dir, 
@@ -34,7 +34,7 @@ def trainer_synapse(args, model, snapshot_path):
 
     trainloader = DataLoader(db_train, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True, worker_init_fn=worker_init_fn)
     
-    if args.n_gpu > 1:
+    if torch.cuda.device_count() > 1:
         model = nn.DataParallel(model)
     model.train()
     
@@ -123,7 +123,7 @@ def trainer_coca(args, model, snapshot_path):
     
     base_lr = args.base_lr
     num_classes = args.num_classes
-    batch_size = args.batch_size * args.n_gpu
+    batch_size = args.batch_size
     
     db_train = COCA_dataset(base_dir=args.root_path, 
                                list_dir=args.list_dir, 
@@ -135,8 +135,9 @@ def trainer_coca(args, model, snapshot_path):
         random.seed(args.seed + worker_id)
 
     trainloader = DataLoader(db_train, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True, worker_init_fn=worker_init_fn)
-    
-    if args.n_gpu > 1:
+    valloader = DataLoader(db_val, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True, worker_init_fn=worker_init_fn)
+
+    if torch.cuda.device_count() > 1:
         model = nn.DataParallel(model)
     model.train()
     
