@@ -59,24 +59,36 @@ if __name__ == "__main__":
             'list_dir': './data/Synapse/lists_Synapse',
             'num_classes': 9,
             'max_epochs': 1000,
-            'base_lr': 0.01
+            'batch_size': 24,
+            'base_lr': 0.01,
+            'img_size': 224,
+            'n_skip': 3,
+            'vit_patches_size': 16
         },
         'COCA': {
             'root_path': './data/COCA/train_npz',
             'list_dir': './data/COCA/lists_COCA',
             'num_classes': 4,
-            'max_epochs': 300,
-            'base_lr': 0.0003,
+            'max_epochs': 1000,
+            'batch_size': 96,
+            'base_lr': 0.001,
+            'img_size': 224,
+            'n_skip': 3,
+            'vit_patches_size': 16
         },
     }
     args.root_path = dataset_config[dataset_name]['root_path']
     args.list_dir = dataset_config[dataset_name]['list_dir']
     args.num_classes = dataset_config[dataset_name]['num_classes']
+    args.batch_size = dataset_config[dataset_name]['batch_size']
     args.max_epochs = dataset_config[dataset_name]['max_epochs']
     args.base_lr = dataset_config[dataset_name]['base_lr']
+    args.img_size = dataset_config[dataset_name]['img_size']
+    args.n_skip = dataset_config[dataset_name]['n_skip']
+    args.vit_patches_size = dataset_config[dataset_name]['vit_patches_size']
     args.is_pretrain = True
     args.exp = 'TU_' + dataset_name + str(args.img_size)
-    snapshot_path = "../model/{}/{}".format(args.exp, 'TU')
+    snapshot_path = "./model/{}/{}".format(args.exp, 'TU')
     snapshot_path = snapshot_path + '_pretrain' if args.is_pretrain else snapshot_path
     snapshot_path = snapshot_path + '_' + args.vit_name
     snapshot_path = snapshot_path + '_skip' + str(args.n_skip)

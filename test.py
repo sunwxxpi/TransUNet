@@ -9,8 +9,8 @@ import torch.nn as nn
 import torch.backends.cudnn as cudnn
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from datasets.dataset_synapse import Synapse_dataset, RandomGenerator
-from datasets.dataset_coca import COCA_dataset, RandomGenerator
+from datasets.dataset_synapse import Synapse_dataset
+from datasets.dataset_coca import COCA_dataset
 from utils import test_single_volume
 from networks.vit_seg_modeling import VisionTransformer as ViT_seg
 from networks.vit_seg_modeling import CONFIGS as CONFIGS_ViT_seg
@@ -81,29 +81,34 @@ if __name__ == "__main__":
         'Synapse': {
             'Dataset': Synapse_dataset,
             'volume_path': './data/Synapse/test_vol_h5',
-            'list_dir': './lists/lists_Synapse',
+            'list_dir': './data/Synapse/lists_Synapse',
             'num_classes': 9,
+            'max_epochs': 1000,
             'z_spacing': 3,
         },
         'COCA': {
             'Dataset': COCA_dataset,
             'volume_path': './data/COCA/test_vol_h5',
-            'list_dir': './lists/lists_COCA',
+            'list_dir': './data/COCA/lists_COCA',
             'num_classes': 4,
+            'max_epochs': 300,
+            'base_lr': 0.0003,
             'z_spacing': 3,
         },
     }
     dataset_name = args.dataset
-    args.num_classes = dataset_config[dataset_name]['num_classes']
-    args.volume_path = dataset_config[dataset_name]['volume_path']
     args.Dataset = dataset_config[dataset_name]['Dataset']
+    args.volume_path = dataset_config[dataset_name]['volume_path']
     args.list_dir = dataset_config[dataset_name]['list_dir']
+    args.num_classes = dataset_config[dataset_name]['num_classes']
+    args.max_epochs = dataset_config[dataset_name]['max_epochs']
+    args.base_lr = dataset_config[dataset_name]['base_lr']
     args.z_spacing = dataset_config[dataset_name]['z_spacing']
     args.is_pretrain = True
 
     # name the same snapshot defined in train script!
     args.exp = 'TU_' + dataset_name + str(args.img_size)
-    snapshot_path = "../model/{}/{}".format(args.exp, 'TU')
+    snapshot_path = "./model/{}/{}".format(args.exp, 'TU')
     snapshot_path = snapshot_path + '_pretrain' if args.is_pretrain else snapshot_path
     snapshot_path = snapshot_path + '_' + args.vit_name
     snapshot_path = snapshot_path + '_skip' + str(args.n_skip)
