@@ -34,8 +34,8 @@ for img_file in tqdm(image_files, desc='Processing', unit='files'):
     
     h5_filename = f'case{case_number}.npy.h5'
     with h5py.File(os.path.join(output_dir, h5_filename), 'w') as h5f:
-        h5f.create_dataset('image', data=image_3d, compression="gzip", dtype='float32')
-        h5f.create_dataset('label', data=label_3d, compression="gzip", dtype='uint8')
+        h5f.create_dataset('image', data=image_3d.transpose(2, 0, 1), compression="gzip", dtype='float32')
+        h5f.create_dataset('label', data=label_3d.transpose(2, 0, 1), compression="gzip", dtype='uint8')
     
     val_txt.write(f'case{case_number}\n')
 
