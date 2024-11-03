@@ -1,11 +1,11 @@
 import os
-import random
 import numpy as np
 import torch
 import h5py
 from torch.utils.data import Dataset
 from scipy import ndimage
 from scipy.ndimage.interpolation import zoom
+from sklearn.model_selection import train_test_split
 
 
 def random_rot_flip(image, label):
@@ -32,9 +32,9 @@ class RandomGenerator(object):
     def __call__(self, sample):
         image, label = sample['image'], sample['label']
 
-        if random.random() > 0.5:
+        if np.random.random() > 0.5:
             image, label = random_rot_flip(image, label)
-        elif random.random() > 0.5:
+        elif np.random.random() > 0.5:
             image, label = random_rotate(image, label)
         x, y = image.shape
         if x != self.output_size[0] or y != self.output_size[1]:
@@ -47,29 +47,39 @@ class RandomGenerator(object):
 
 
 class COCA_dataset(Dataset):
-    def __init__(self, base_dir, list_dir, split, transform=None):
-        self.transform = transform  # using transform in torch!
+    def __init__(self, base_dir, list_dir, split, transform=None, train_ratio=0.8):
+        self.transform = transform
         self.split = split
-        self.sample_list = open(os.path.join(list_dir, self.split+'.txt')).readlines()
         self.data_dir = base_dir
+
+        # train.txt 파일을 읽어 전체 리스트를 가져옵니다.
+        full_sample_list = open(os.path.join(list_dir, "train.txt")).readlines()
+
+        if split in ["train", "val"]:
+            train_samples, val_samples = train_test_split(full_sample_list, train_size=train_ratio, random_state=42)
+            self.sample_list = train_samples if split == "train" else val_samples
+        else:
+            self.sample_list = open(os.path.join(list_dir, "test_vol.txt")).readlines()
 
     def __len__(self):
         return len(self.sample_list)
 
     def __getitem__(self, idx):
-        if self.split == "train":
-            slice_name = self.sample_list[idx].strip('\n')
-            data_path = os.path.join(self.data_dir, slice_name+'.npz')
+        sample_name = self.sample_list[idx].strip('\n')
+        
+        if self.split == "train" or self.split == "val":
+            # train과 val의 경우 .npz 파일을 사용합니다.
+            data_path = os.path.join(self.data_dir, sample_name + '.npz')
             data = np.load(data_path)
             image, label = data['image'], data['label']
         else:
-            vol_name = self.sample_list[idx].strip('\n')
-            filepath = self.data_dir + "/{}.npy.h5".format(vol_name)
-            data = h5py.File(filepath)
+            # test의 경우 .npy.h5 파일을 사용합니다.
+            filepath = os.path.join(self.data_dir, "{}.npy.h5".format(sample_name))
+            data = h5py.File(filepath, 'r')
             image, label = data['image'][:], data['label'][:]
 
         sample = {'image': image, 'label': label}
         if self.transform:
             sample = self.transform(sample)
-        sample['case_name'] = self.sample_list[idx].strip('\n')
+        sample['case_name'] = sample_name
         return sample
