@@ -70,6 +70,7 @@ def trainer_coca(args, model, snapshot_path):
 
     iter_num = 0
     max_epoch = args.max_epochs
+    best_val_loss = float('inf')
     
     for epoch_num in tqdm(range(1, max_epoch + 1), ncols=70):
         train_dice_loss = 0.0
@@ -144,28 +145,25 @@ def trainer_coca(args, model, snapshot_path):
         writer.add_scalar('val/loss_total', val_loss, epoch_num)
         logging.info('Validation - epoch %d - val_loss_dice: %f, val_loss_ce: %f, val_loss_total: %f' % (epoch_num, val_dice_loss, val_ce_loss, val_loss))
 
-        save_interval = 25
-        if epoch_num > int(max_epoch / 5) and (epoch_num + 1) % save_interval == 0:
-            save_model_path = os.path.join(snapshot_path, 'epoch_' + str(epoch_num) + '.pth')
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
             
-            if isinstance(model, nn.DataParallel):
-                torch.save(model.module.state_dict(), save_model_path)
-            else:
-                torch.save(model.state_dict(), save_model_path)
-            
-            logging.info("save model to {}".format(save_model_path))
-
-        if epoch_num >= max_epoch - 1:
-            save_model_path = os.path.join(snapshot_path, 'epoch_' + str(epoch_num) + '.pth')
-            
+            save_model_path = os.path.join(snapshot_path, 'best_model.pth')
             if isinstance(model, nn.DataParallel):
                 torch.save(model.module.state_dict(), save_model_path)
             else:
                 torch.save(model.state_dict(), save_model_path)
                 
-            logging.info("save model to {}".format(save_model_path))
-            
-            break
+            logging.info(f"Best model saved to {save_model_path} with val_loss: {val_loss:.6f}")
+
+        if epoch_num == max_epoch:
+            save_model_path = os.path.join(snapshot_path, f'epoch_{epoch_num}.pth')
+            if isinstance(model, nn.DataParallel):
+                torch.save(model.module.state_dict(), save_model_path)
+            else:
+                torch.save(model.state_dict(), save_model_path)
+                
+            logging.info(f"Final epoch model saved to {save_model_path}")
 
     writer.close()
     return "Training Finished!"
