@@ -133,7 +133,7 @@ def trainer_coca(args, model, snapshot_path):
                 
                 outputs = model(image_batch)
                 val_dice_loss += dice_loss(outputs, label_batch, softmax=True).item()
-                val_ce_loss += ce_loss(outputs, label_batch[:].long()).item()
+                val_ce_loss += ce_loss(outputs, label_batch).item()
 
         # Epoch별 평균 validation 손실 계산 및 기록
         val_dice_loss /= len(valloader)
