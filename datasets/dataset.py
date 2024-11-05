@@ -28,11 +28,9 @@ def random_rotate(image, label):
     
     return image, label
 
-def percentile_normalization(image):
-    """Normalize the image based on the 1st and 99th percentiles."""
-    p1 = np.percentile(image, 1)
-    p99 = np.percentile(image, 99)
-    normalized_img = (image - p1) / (p99 - p1)
+def fixed_min_max_normalization(image, min_val=0, max_val=2000):
+    """Normalize the image based on fixed min and max values of 0 and 2000."""
+    normalized_img = (image - min_val) / (max_val - min_val)
     
     return np.clip(normalized_img, 0, 1)
 
@@ -130,7 +128,7 @@ class COCA_dataset(Dataset):
             with h5py.File(filepath, 'r') as data:
                 image, label = data['image'][:], data['label'][:]
 
-        # image = percentile_normalization(image)
+        image = fixed_min_max_normalization(image)
 
         sample = {'image': image, 'label': label, 'case_name': sample_name}
 
