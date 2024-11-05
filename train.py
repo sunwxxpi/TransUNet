@@ -59,8 +59,8 @@ if __name__ == "__main__":
             'list_dir': './data/COCA/lists_COCA',
             'num_classes': 4,
             'max_epochs': 1000,
-            'batch_size': 96,
-            'base_lr': 0.001,
+            'batch_size': 48,
+            'base_lr': 0.005,
             'img_size': 224,
             'n_skip': 3,
             'vit_patches_size': 16

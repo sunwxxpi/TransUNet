@@ -82,7 +82,7 @@ def trainer_coca(args, model, snapshot_path):
 
             outputs = model(image_batch)
             loss_dice = dice_loss(outputs, label_batch, softmax=True)
-            loss_ce = ce_loss(outputs, label_batch[:].long())
+            loss_ce = ce_loss(outputs, label_batch)
             loss = loss_ce + loss_dice
 
             optimizer.zero_grad()
