@@ -6,7 +6,7 @@ import torch
 import torch.backends.cudnn as cudnn
 from networks.vit_seg_modeling import VisionTransformer as ViT_seg
 from networks.vit_seg_modeling import CONFIGS as CONFIGS_ViT_seg
-from trainer import trainer_synapse, trainer_coca
+from trainer import trainer_coca
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--root_path', type=str,
@@ -54,17 +54,6 @@ if __name__ == "__main__":
     torch.cuda.manual_seed(args.seed)
     dataset_name = args.dataset
     dataset_config = {
-        'Synapse': {
-            'root_path': './data/Synapse/train_npz',
-            'list_dir': './data/Synapse/lists_Synapse',
-            'num_classes': 9,
-            'max_epochs': 1000,
-            'batch_size': 24,
-            'base_lr': 0.01,
-            'img_size': 224,
-            'n_skip': 3,
-            'vit_patches_size': 16
-        },
         'COCA': {
             'root_path': './data/COCA/train_npz',
             'list_dir': './data/COCA/lists_COCA',
@@ -110,6 +99,5 @@ if __name__ == "__main__":
     net = ViT_seg(config_vit, img_size=args.img_size, num_classes=config_vit.n_classes).cuda()
     net.load_from(weights=np.load(config_vit.pretrained_path))
 
-    trainer = {'Synapse': trainer_synapse,
-               'COCA': trainer_coca}
+    trainer = {'COCA': trainer_coca}
     trainer[dataset_name](args, net, snapshot_path)
