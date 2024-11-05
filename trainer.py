@@ -25,25 +25,24 @@ def trainer_coca(args, model, snapshot_path):
     num_classes = args.num_classes
     batch_size = args.batch_size
     
-    # Train dataset
-    db_train = COCA_dataset(base_dir=args.root_path, 
-                            list_dir=args.list_dir, 
-                            split="train",
-                            transform=transforms.Compose([RandomGenerator(output_size=[args.img_size, args.img_size])]))
+    train_transform = RandomGenerator(output_size=[args.img_size, args.img_size])
+    db_train = COCA_dataset(
+        base_dir=args.root_path, 
+        list_dir=args.list_dir, 
+        split="train",
+        transform=train_transform
+    )
     
-    # Validation dataset without RandomGenerator (just resizing if needed)
-    val_transform = transforms.Compose([
-                        lambda sample: {'image': zoom(sample['image'], (args.img_size / sample['image'].shape[0], args.img_size / sample['image'].shape[1]), order=3),
-                                        'label': zoom(sample['label'], (args.img_size / sample['label'].shape[0], args.img_size / sample['label'].shape[1]), order=0)},
-                        lambda sample: {'image': torch.from_numpy(sample['image'].astype(np.float32)).unsqueeze(0),
-                                        'label': torch.from_numpy(sample['label'].astype(np.float32)).long()}
-                        ])
-    
-    # Validation dataset
-    db_val = COCA_dataset(base_dir=args.root_path, 
-                          list_dir=args.list_dir, 
-                          split="val",
-                          transform=val_transform)
+    val_transform = T.Compose([
+        Resize(output_size=[args.img_size, args.img_size]),
+        ToTensor()
+    ])
+    db_val = COCA_dataset(
+        base_dir=args.root_path, 
+        list_dir=args.list_dir, 
+        split="val",
+        transform=val_transform
+    )
 
     print("The length of train set is: {}".format(len(db_train)))
     print("The length of validation set is: {}".format(len(db_val)))

@@ -44,7 +44,12 @@ args = parser.parse_args()
 
 
 def inference(args, model, test_save_path=None):
-    db_test = args.Dataset(base_dir=args.volume_path, split="test_vol", list_dir=args.list_dir)
+    db_test = COCA_dataset(
+        base_dir=args.volume_path, 
+        split="test", 
+        list_dir=args.list_dir,
+        transform=T.Compose([Resize((args.img_size, args.img_size))])
+    )
     testloader = DataLoader(db_test, batch_size=1, shuffle=False, num_workers=1)
     logging.info("{} test iterations per epoch".format(len(testloader)))
     model.eval()
