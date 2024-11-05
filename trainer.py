@@ -7,8 +7,8 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.nn.modules.loss import CrossEntropyLoss
 from torch.utils.data import DataLoader
-from torchvision import transforms as T
 from torch.utils.tensorboard import SummaryWriter
+from torchvision import transforms as T
 from tqdm import tqdm
 from utils import PolyLRScheduler, DiceLoss
 from datasets.dataset import COCA_dataset, RandomGenerator, Resize, ToTensor
@@ -59,7 +59,8 @@ def trainer_coca(args, model, snapshot_path):
     
     dice_loss = DiceLoss(num_classes)
     ce_loss = CrossEntropyLoss()
-    optimizer = optim.SGD(model.parameters(), lr=base_lr, momentum=0.99, weight_decay=3e-5)
+    # optimizer = optim.SGD(model.parameters(), lr=base_lr, momentum=0.99, weight_decay=3e-5)
+    optimizer = optim.AdamW(model.parameters(), lr=base_lr)
     
     max_iterations = args.max_epochs * len(trainloader)
     scheduler = PolyLRScheduler(optimizer, initial_lr=base_lr, max_steps=max_iterations)
