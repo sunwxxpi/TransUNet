@@ -128,7 +128,7 @@ class COCA_dataset(Dataset):
             with h5py.File(filepath, 'r') as data:
                 image, label = data['image'][:], data['label'][:]
 
-        image = fixed_min_max_normalization(image)
+        # image = fixed_min_max_normalization(image)
 
         sample = {'image': image, 'label': label, 'case_name': sample_name}
 
