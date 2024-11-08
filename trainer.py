@@ -113,7 +113,7 @@ def trainer_coca(args, model, snapshot_path):
 
         train_dice_loss /= len(trainloader)
         train_ce_loss /= len(trainloader)
-        train_loss = train_dice_loss + train_ce_loss
+        train_loss = (0.5 * train_dice_loss) + (0.5 * train_ce_loss)
         
         writer.add_scalar('train/lr', current_lr, epoch_num)
         writer.add_scalar('train/loss_dice', train_dice_loss, epoch_num)
@@ -138,7 +138,7 @@ def trainer_coca(args, model, snapshot_path):
         # Epoch별 평균 validation 손실 계산 및 기록
         val_dice_loss /= len(valloader)
         val_ce_loss /= len(valloader)
-        val_loss = val_dice_loss + val_ce_loss
+        val_loss = (0.5 * val_dice_loss) + (0.5 * val_ce_loss)
 
         writer.add_scalar('val/loss_dice', val_dice_loss, epoch_num)
         writer.add_scalar('val/loss_ce', val_ce_loss, epoch_num)
