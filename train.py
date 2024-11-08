@@ -60,7 +60,7 @@ if __name__ == "__main__":
             'num_classes': 4,
             'max_epochs': 1000,
             'batch_size': 48,
-            'base_lr': 0.0005,
+            'base_lr': 0.0001,
             'img_size': 224,
             'n_skip': 3,
             'vit_patches_size': 16
