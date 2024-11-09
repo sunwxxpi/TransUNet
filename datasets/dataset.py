@@ -30,8 +30,8 @@ def random_rotate(image, label):
     
     return image, label
 
-def fixed_min_max_normalization(image, min_val=0, max_val=2000):
-    """Normalize the image based on fixed min and max values of 0 and 2000."""
+def fixed_min_max_normalization(image, min_val=0, max_val=2500):
+    """Normalize the image based on fixed min and max values of 0 and 2500."""
     normalized_img = (image - min_val) / (max_val - min_val)
     
     return np.clip(normalized_img, 0, 1)
@@ -133,7 +133,7 @@ class COCA_dataset(Dataset):
             with h5py.File(filepath, 'r') as data:
                 image, label = data['image'][:], data['label'][:]
 
-        # image = fixed_min_max_normalization(image)
+        image = fixed_min_max_normalization(image)
 
         sample = {'image': image, 'label': label, 'case_name': sample_name}
 
