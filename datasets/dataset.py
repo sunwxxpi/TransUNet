@@ -1,8 +1,10 @@
 import os
+import random
 import numpy as np
 import torch
 import h5py
 from torch.utils.data import Dataset
+from torch.utils.data.dataloader import default_collate
 from torchvision import transforms as T
 from scipy import ndimage
 from scipy.ndimage import zoom
@@ -33,6 +35,11 @@ def fixed_min_max_normalization(image, min_val=0, max_val=2000):
     normalized_img = (image - min_val) / (max_val - min_val)
     
     return np.clip(normalized_img, 0, 1)
+
+def shuffle_within_batch(batch):
+    random.shuffle(batch)
+    
+    return default_collate(batch)
 
 class RandomAugmentation:
     """Apply random rotations and flips to the image and label."""
@@ -101,9 +108,7 @@ class COCA_dataset(Dataset):
             full_sample_list = f.readlines()
 
         if split in ["train", "val"]:
-            train_samples, val_samples = train_test_split(
-                full_sample_list, train_size=train_ratio, random_state=42
-            )
+            train_samples, val_samples = train_test_split(full_sample_list, train_size=train_ratio, shuffle=False, random_state=42)
             self.sample_list = train_samples if split == "train" else val_samples
         else:
             with open(os.path.join(list_dir, "test_vol.txt"), 'r') as f:
