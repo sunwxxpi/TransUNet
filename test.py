@@ -38,7 +38,6 @@ def inference(args, model, test_save_path=None):
         base_dir=args.volume_path, 
         split="test", 
         list_dir=args.list_dir,
-        transform=T.Compose([Resize((args.img_size, args.img_size))])
     )
     testloader = DataLoader(db_test, batch_size=1, shuffle=False, num_workers=1)
     
@@ -54,7 +53,7 @@ def inference(args, model, test_save_path=None):
         metric_i = test_single_volume(image, label, model, classes=args.num_classes, patch_size=[args.img_size, args.img_size],
                                       test_save_path=test_save_path, case=case_name, z_spacing=args.z_spacing)
         metric_list += np.array(metric_i)
-        logging.info('idx %d case %s mean_dice %f mean_hd95 %f' % (i_batch, case_name, np.mean(metric_i, axis=0)[0], np.mean(metric_i, axis=0)[1]))
+        logging.info('%s mean_dice %f mean_hd95 %f' % (case_name, np.mean(metric_i, axis=0)[0], np.mean(metric_i, axis=0)[1]))
     
     metric_list = metric_list / len(db_test)
     
@@ -135,9 +134,6 @@ if __name__ == "__main__":
     
     net.load_state_dict(torch.load(best_model_path))
     
-    if torch.cuda.device_count() > 1:
-        net = nn.DataParallel(net)
-
     # 로깅 설정
     snapshot_name = snapshot_path.split('/')[-1]
     log_folder = './test_log/test_log_' + args.exp
