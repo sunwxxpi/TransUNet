@@ -103,11 +103,9 @@ class COCA_dataset(Dataset):
         self.split = split
         self.data_dir = base_dir
 
-        # Read full sample list from train.txt
-        with open(os.path.join(list_dir, "train.txt"), 'r') as f:
-            full_sample_list = f.readlines()
-
         if split in ["train", "val"]:
+            with open(os.path.join(list_dir, "train.txt"), 'r') as f:
+                full_sample_list = f.readlines()
             train_samples, val_samples = train_test_split(full_sample_list, train_size=train_ratio, shuffle=False, random_state=42)
             self.sample_list = train_samples if split == "train" else val_samples
         else:
