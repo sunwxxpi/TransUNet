@@ -96,11 +96,13 @@ def test_single_volume(image, label, net, classes, patch_size=[256, 256], test_s
     
     if len(image.shape) == 3:
         prediction = np.zeros_like(label)
+        
         for ind in range(image.shape[0]):
             slice = image[ind, :, :]
             x, y = slice.shape[0], slice.shape[1]
             if x != patch_size[0] or y != patch_size[1]:
                 slice = zoom(slice, (patch_size[0] / x, patch_size[1] / y), order=3)
+                
             input = torch.from_numpy(slice).unsqueeze(0).unsqueeze(0).float().cuda()
             
             net.eval()
