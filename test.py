@@ -5,12 +5,10 @@ import argparse
 import logging
 import numpy as np
 import torch
-import torch.nn as nn
 import torch.backends.cudnn as cudnn
 from torch.utils.data import DataLoader
-from torchvision import transforms as T
 from tqdm import tqdm
-from datasets.dataset import COCA_dataset, Resize
+from datasets.dataset import COCA_dataset
 from utils import test_single_volume
 from networks.vit_seg_modeling import VisionTransformer as ViT_seg
 from networks.vit_seg_modeling import CONFIGS as CONFIGS_ViT_seg
