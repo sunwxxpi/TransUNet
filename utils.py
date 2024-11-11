@@ -67,12 +67,14 @@ class DiceLoss(nn.Module):
         class_wise_dice = []
         loss = 0.0
         
-        for i in range(0, self.n_classes):
+        # Background(index 0) 제외, Foreground(나머지 클래스)에 대해서만 Dice Loss 계산
+        for i in range(1, self.n_classes):
             dice = self._dice_loss(inputs[:, i], target[:, i])
             class_wise_dice.append(1.0 - dice.item())
             loss += dice * weight[i]
-            
-        return loss / self.n_classes
+        
+        # Background를 제외한 클래스 수로 나눠서 평균 계산
+        return loss / (self.n_classes - 1)
 
 
 def calculate_metric_percase(pred, gt):
