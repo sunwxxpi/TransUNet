@@ -74,6 +74,7 @@ def trainer_coca(args, model, snapshot_path):
     iter_num = 0
     max_epoch = args.max_epochs
     best_val_loss = float('inf')
+    best_model_path = None
     
     for epoch_num in tqdm(range(1, max_epoch + 1), ncols=70):
         train_dice_loss = 0.0
@@ -153,22 +154,25 @@ def trainer_coca(args, model, snapshot_path):
         if val_loss < best_val_loss:
             best_val_loss = val_loss
             
-            save_model_path = os.path.join(snapshot_path, f'epoch_{epoch_num}_{best_val_loss}_best_model.pth')
+            if best_model_path and os.path.exists(best_model_path):
+                os.remove(best_model_path)
+            
+            best_model_path = os.path.join(snapshot_path, f'epoch_{epoch_num}_{best_val_loss:.4f}_best_model.pth')
             if isinstance(model, nn.DataParallel):
-                torch.save(model.module.state_dict(), save_model_path)
+                torch.save(model.module.state_dict(), best_model_path)
             else:
-                torch.save(model.state_dict(), save_model_path)
+                torch.save(model.state_dict(), best_model_path)
                 
-            logging.info(f"Best model saved to {save_model_path} with val_loss: {best_val_loss:.6f}")
+            logging.info(f"Best model saved to {best_model_path} with val_loss: {best_val_loss:.4f}")
 
         if epoch_num == max_epoch:
-            save_model_path = os.path.join(snapshot_path, f'epoch_{epoch_num}_{val_loss}.pth')
+            save_model_path = os.path.join(snapshot_path, f'epoch_{epoch_num}_{val_loss:.4f}.pth')
             if isinstance(model, nn.DataParallel):
                 torch.save(model.module.state_dict(), save_model_path)
             else:
                 torch.save(model.state_dict(), save_model_path)
                 
-            logging.info(f"Final epoch model saved to {save_model_path}")
+            logging.info(f"Final epoch model saved to {save_model_path:.4f}")
 
     writer.close()
     return "Training Finished!"
