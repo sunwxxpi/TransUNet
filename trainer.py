@@ -153,16 +153,16 @@ def trainer_coca(args, model, snapshot_path):
         if val_loss < best_val_loss:
             best_val_loss = val_loss
             
-            save_model_path = os.path.join(snapshot_path, 'best_model.pth')
+            save_model_path = os.path.join(snapshot_path, f'epoch_{epoch_num}_{best_val_loss}_best_model.pth')
             if isinstance(model, nn.DataParallel):
                 torch.save(model.module.state_dict(), save_model_path)
             else:
                 torch.save(model.state_dict(), save_model_path)
                 
-            logging.info(f"Best model saved to {save_model_path} with val_loss: {val_loss:.6f}")
+            logging.info(f"Best model saved to {save_model_path} with val_loss: {best_val_loss:.6f}")
 
         if epoch_num == max_epoch:
-            save_model_path = os.path.join(snapshot_path, f'epoch_{epoch_num}.pth')
+            save_model_path = os.path.join(snapshot_path, f'epoch_{epoch_num}_{val_loss}.pth')
             if isinstance(model, nn.DataParallel):
                 torch.save(model.module.state_dict(), save_model_path)
             else:
