@@ -6,8 +6,9 @@ import logging
 import numpy as np
 import torch
 import torch.backends.cudnn as cudnn
-from torch.utils.data import DataLoader
+from glob import glob
 from tqdm import tqdm
+from torch.utils.data import DataLoader
 from datasets.dataset import COCA_dataset
 from utils import test_single_volume
 from networks.vit_seg_modeling import VisionTransformer as ViT_seg
@@ -126,11 +127,12 @@ if __name__ == "__main__":
     net = ViT_seg(config_vit, img_size=args.img_size, num_classes=config_vit.n_classes).cuda()
     
     # Best 모델 경로 설정 및 로드
-    best_model_path = os.path.join(snapshot_path, 'best_model.pth')
-    if not os.path.exists(best_model_path):
-        raise FileNotFoundError(f"Best model not found at {best_model_path}")
+    best_model_path = glob(os.path.join(snapshot_path, '*_best_model.pth'))[0] # 유일한 best_model 파일 선택
+    if not best_model_path:
+        raise FileNotFoundError(f"Best model not found at {snapshot_path}")
     
     net.load_state_dict(torch.load(best_model_path))
+    print(f"Loaded best model from: {best_model_path}")
     
     # 로깅 설정
     snapshot_name = snapshot_path.split('/')[-1]
@@ -139,6 +141,7 @@ if __name__ == "__main__":
     logging.basicConfig(filename=log_folder + '/' + snapshot_name + ".txt", level=logging.INFO,
                         format='[%(asctime)s.%(msecs)03d] %(message)s', datefmt='%H:%M:%S')
     logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
+    logging.info(best_model_path)
     logging.info(str(args))
     logging.info(snapshot_name)
 
