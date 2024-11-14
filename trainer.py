@@ -172,7 +172,7 @@ def trainer_coca(args, model, snapshot_path):
             else:
                 torch.save(model.state_dict(), save_model_path)
                 
-            logging.info(f"Final epoch model saved to {save_model_path:.4f}")
+            logging.info(f"Final epoch model saved to {save_model_path} with val_loss: {val_loss:.4f}")
 
     writer.close()
     return "Training Finished!"
