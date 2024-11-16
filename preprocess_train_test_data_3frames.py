@@ -6,7 +6,7 @@ import h5py
 
 # Paths and configurations
 DATASET_DIR = '/home/psw/TransUNet/data/nnUNet_raw/Dataset001_COCA'
-OUTPUT_DIR = '/home/psw/TransUNet/data/COCA_norm'
+OUTPUT_DIR = '/home/psw/TransUNet/data/COCA_norm_3frames'
 LIST_DIR = os.path.join(OUTPUT_DIR, 'lists_COCA')
 os.makedirs(LIST_DIR, exist_ok=True)
 
@@ -51,14 +51,14 @@ def process_file(ct_path, seg_path, save_path, list_file, split, clip_range):
             np.clip(ct_array, lower, upper, out=ct_array)
             ct_array = (ct_array - mean) / max(std, 1e-8)
             
-            # Train split: save slices as NPZ
+            # Train split: save 3-frame slices as NPZ
             if split == 'train':
                 os.makedirs(save_path, exist_ok=True)
-                for slice_idx in range(ct_array.shape[2]):
-                    image_slice = ct_array[:, :, slice_idx]
-                    label_slice = seg_array[:, :, slice_idx]
+                for slice_idx in range(ct_array.shape[2] - 2):
+                    image_slices = ct_array[:, :, slice_idx:slice_idx + 3]  # 3 slices
+                    label_slice = seg_array[:, :, slice_idx + 1]  # Center slice
                     npz_filename = os.path.join(save_path, f'case{case_number}_slice{slice_idx:03d}.npz')
-                    np.savez(npz_filename, image=image_slice, label=label_slice)
+                    np.savez(npz_filename, image=image_slices, label=label_slice)
                     list_f.write(f'case{case_number}_slice{slice_idx:03d}\n')
             # Test split: save as HDF5
             elif split == 'test':
