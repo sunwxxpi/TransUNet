@@ -62,8 +62,8 @@ def trainer_coca(args, model, snapshot_path):
     
     dice_loss = DiceLoss(num_classes)
     ce_loss = CrossEntropyLoss()
-    # optimizer = optim.SGD(model.parameters(), lr=base_lr, momentum=0.99, weight_decay=3e-5)
-    optimizer = optim.AdamW(model.parameters(), lr=base_lr)
+    # optimizer = optim.SGD(model.parameters(), lr=base_lr, momentum=0.9, weight_decay=1e-4)
+    optimizer = optim.AdamW(model.parameters(), lr=base_lr, weight_decay=1e-4)
     
     max_iterations = args.max_epochs * len(trainloader)
     scheduler = PolyLRScheduler(optimizer, initial_lr=base_lr, max_steps=max_iterations)
