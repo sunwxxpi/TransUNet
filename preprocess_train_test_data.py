@@ -10,9 +10,6 @@ OUTPUT_DIR = '/home/psw/TransUNet/data/COCA_norm'
 LIST_DIR = os.path.join(OUTPUT_DIR, 'lists_COCA')
 os.makedirs(LIST_DIR, exist_ok=True)
 
-# Value for normalization in COCA dataset (0.05%, 99.95%, mean, std)
-NORM_VALUE = (1016, 1807, 1223.2043595897762, 133.03651991499345)
-
 # File paths
 SPLITS = {
     'train': {
@@ -30,8 +27,7 @@ SPLITS = {
 }
 
 # Function to process a single file
-def process_file(ct_path, seg_path, save_path, list_file, split, clip_range):
-    lower, upper, mean, std = clip_range
+def process_file(ct_path, seg_path, save_path, list_file, split):
     with open(list_file, 'w') as list_f:
         for ct_file in tqdm(os.listdir(ct_path), desc=f'Processing {split}', unit='files'):
             base_name = ct_file.replace('_0000.nii.gz', '')  # Base name extraction
@@ -47,10 +43,6 @@ def process_file(ct_path, seg_path, save_path, list_file, split, clip_range):
             ct_array = nib.load(image_path).get_fdata().astype(np.float32)
             seg_array = nib.load(label_path).get_fdata().astype(np.uint8)
 
-            # Clip and normalize CT values
-            np.clip(ct_array, lower, upper, out=ct_array)
-            ct_array = (ct_array - mean) / max(std, 1e-8)
-            
             # Train split: save slices as NPZ
             if split == 'train':
                 os.makedirs(save_path, exist_ok=True)
@@ -76,6 +68,5 @@ for split, paths in SPLITS.items():
         seg_path=paths['seg_path'],
         save_path=paths['save_path'],
         list_file=paths['list_file'],
-        split=split,
-        clip_range=NORM_VALUE
+        split=split
     )
