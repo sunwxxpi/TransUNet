@@ -30,12 +30,18 @@ def random_rotate(image, label):
     
     return image, label
 
-def ct_normalization(image, lower=0, upper=2500, mean=1223.2043595897762, std=133.03651991499345):
+def ct_normalization(image, lower=1016, upper=1807, mean=1223.2043595897762, std=133.03651991499345):
     """Normalize the CT image using fixed intensity range and standardization."""
     np.clip(image, lower, upper, out=image)
     image = (image - mean) / max(std, 1e-8)
     
     return image
+
+def fixed_min_max_normalization(image, min_val=0, max_val=2500):
+    """Normalize the image based on fixed min and max values of 0 and 2500."""
+    normalized_img = (image - min_val) / (max_val - min_val)
+    
+    return np.clip(normalized_img, 0, 1)
 
 def shuffle_within_batch(batch):
     random.shuffle(batch)
@@ -89,7 +95,7 @@ class RandomGenerator:
     """Compose random augmentations and preprocessing for training."""
     def __init__(self, output_size):
         self.transform = T.Compose([
-            RandomAugmentation(),
+            # RandomAugmentation(),
             Resize(output_size),
             ToTensor()
         ])
@@ -132,7 +138,7 @@ class COCA_dataset(Dataset):
             with h5py.File(filepath, 'r') as data:
                 image, label = data['image'][:], data['label'][:]
 
-        # image = ct_normalization(image)
+        image = ct_normalization(image)
 
         sample = {'image': image, 'label': label, 'case_name': sample_name}
 
