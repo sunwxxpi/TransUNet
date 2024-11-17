@@ -84,7 +84,7 @@ class EMCADNet(nn.Module):
         self.out_head2 = nn.Conv2d(channels[2], num_classes, 1)
         self.out_head1 = nn.Conv2d(channels[3], num_classes, 1)
         
-    def forward(self, x, mode='test'):
+    def forward(self, x):
         
         # if grayscale input, convert to 3 channels
         if x.size()[1] == 1:
@@ -92,7 +92,6 @@ class EMCADNet(nn.Module):
         
         # encoder
         x1, x2, x3, x4 = self.backbone(x)
-        #print(x1.shape, x2.shape, x3.shape, x4.shape)
 
         # decoder
         dec_outs = self.decoder(x4, [x3, x2, x1])
@@ -107,13 +106,8 @@ class EMCADNet(nn.Module):
         p3 = F.interpolate(p3, scale_factor=16, mode='bilinear')
         p2 = F.interpolate(p2, scale_factor=8, mode='bilinear')
         p1 = F.interpolate(p1, scale_factor=4, mode='bilinear')
-        print(p4.shape, p3.shape, p2.shape, p1.shape)
-
-        if mode == 'test':
-            return [p4, p3, p2, p1]
         
         return [p4, p3, p2, p1]
-               
 
         
 if __name__ == '__main__':
