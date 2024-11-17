@@ -6,7 +6,7 @@ import h5py
 
 # Paths and configurations
 DATASET_DIR = '/home/psw/TransUNet/data/nnUNet_raw/Dataset001_COCA'
-OUTPUT_DIR = '/home/psw/TransUNet/data/COCA_norm_3frames'
+OUTPUT_DIR = '/home/psw/TransUNet/data/COCA_3frames'
 LIST_DIR = os.path.join(OUTPUT_DIR, 'lists_COCA')
 os.makedirs(LIST_DIR, exist_ok=True)
 
