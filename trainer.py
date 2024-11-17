@@ -60,9 +60,9 @@ def trainer_coca(args, model, snapshot_path):
         model = nn.DataParallel(model)
     model.train()
     
-    dice_loss = DiceLoss(num_classes)
-    ce_loss = CrossEntropyLoss()
-    # optimizer = optim.SGD(model.parameters(), lr=base_lr, momentum=0.9, weight_decay=1e-4)
+    dice_loss_class = DiceLoss(num_classes)
+    ce_loss_class = CrossEntropyLoss()
+    # optimizer = optim.SGD(model.parameters(), lr=base_lr, weight_decay=3e-5, momentum=0.99, nesterov=True)
     optimizer = optim.AdamW(model.parameters(), lr=base_lr, weight_decay=1e-4)
     
     max_iterations = args.max_epochs * len(trainloader)
@@ -79,6 +79,7 @@ def trainer_coca(args, model, snapshot_path):
     for epoch_num in tqdm(range(1, max_epoch + 1), ncols=70):
         train_dice_loss = 0.0
         train_ce_loss = 0.0
+        train_loss = 0.0
         
         model.train()
         for i_batch, sampled_batch in enumerate(trainloader):
@@ -87,10 +88,10 @@ def trainer_coca(args, model, snapshot_path):
 
             outputs = model(image_batch)
             
-            loss_dice = dice_loss(outputs, label_batch, softmax=True)
-            loss_ce = ce_loss(outputs, label_batch)
-            loss = loss_ce + loss_dice
-
+            dice_loss = dice_loss_class(outputs, label_batch, softmax=True)
+            ce_loss = ce_loss_class(outputs, label_batch)
+            loss = (0.5 * dice_loss) + (0.5 * ce_loss)
+            
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -99,10 +100,12 @@ def trainer_coca(args, model, snapshot_path):
             current_lr = scheduler.optimizer.param_groups[0]['lr']
             
             iter_num += 1
-            train_dice_loss += loss_dice.item()
-            train_ce_loss += loss_ce.item()
+            
+            train_dice_loss += dice_loss.item()
+            train_ce_loss += ce_loss.item()
+            train_loss += loss.item()
 
-            logging.info('epoch %d, iteration %d - loss_dice: %f, loss_ce: %f, loss_total: %f' % (epoch_num, iter_num, loss_dice.item(), loss_ce.item(), loss.item()))
+            logging.info('epoch %d, iteration %d - dice_loss: %f, ce_loss: %f, loss_total: %f' % (epoch_num, iter_num, dice_loss.item(), ce_loss.item(), loss.item()))
             
             if iter_num % 50 == 0:
                 image = image_batch[1, 0:1, :, :]
@@ -118,17 +121,18 @@ def trainer_coca(args, model, snapshot_path):
 
         train_dice_loss /= len(trainloader)
         train_ce_loss /= len(trainloader)
-        train_loss = (0.5 * train_dice_loss) + (0.5 * train_ce_loss)
+        train_loss /= len(trainloader)
         
         writer.add_scalar('train/lr', current_lr, epoch_num)
-        writer.add_scalar('train/loss_dice', train_dice_loss, epoch_num)
-        writer.add_scalar('train/loss_ce', train_ce_loss, epoch_num)
-        writer.add_scalar('train/loss_total', train_loss, epoch_num)
-        logging.info('Train - epoch %d - train_loss_dice: %f, train_loss_ce: %f, train_loss_total: %f' % (epoch_num, train_dice_loss, train_ce_loss, train_loss))
+        writer.add_scalar('train/dice_loss', train_dice_loss, epoch_num)
+        writer.add_scalar('train/ce_loss', train_ce_loss, epoch_num)
+        writer.add_scalar('train/train_loss', train_loss, epoch_num)
+        logging.info('Train - epoch %d - train_dice_loss: %f, train_ce_loss: %f, train_loss: %f' % (epoch_num, train_dice_loss, train_ce_loss, train_loss))
 
         # Validation step after each epoch
         val_dice_loss = 0.0
         val_ce_loss = 0.0
+        val_loss = 0.0
         
         model.eval()
         with torch.no_grad():
@@ -138,18 +142,23 @@ def trainer_coca(args, model, snapshot_path):
                 
                 outputs = model(image_batch)
                 
-                val_dice_loss += dice_loss(outputs, label_batch, softmax=True).item()
-                val_ce_loss += ce_loss(outputs, label_batch).item()
+                dice_loss = dice_loss_class(outputs, label_batch, softmax=True)
+                ce_loss = ce_loss_class(outputs, label_batch)
+                loss = (0.5 * dice_loss) + (0.5 * ce_loss)
+                
+                val_dice_loss += dice_loss.item()
+                val_ce_loss += ce_loss.item()
+                val_loss += loss.item()
 
         # Epoch별 평균 validation 손실 계산 및 기록
         val_dice_loss /= len(valloader)
         val_ce_loss /= len(valloader)
-        val_loss = (0.5 * val_dice_loss) + (0.5 * val_ce_loss)
+        val_loss /= len(valloader)
 
-        writer.add_scalar('val/loss_dice', val_dice_loss, epoch_num)
-        writer.add_scalar('val/loss_ce', val_ce_loss, epoch_num)
-        writer.add_scalar('val/loss_total', val_loss, epoch_num)
-        logging.info('Validation - epoch %d - val_loss_dice: %f, val_loss_ce: %f, val_loss_total: %f' % (epoch_num, val_dice_loss, val_ce_loss, val_loss))
+        writer.add_scalar('val/dice_loss', val_dice_loss, epoch_num)
+        writer.add_scalar('val/ce_loss', val_ce_loss, epoch_num)
+        writer.add_scalar('val/val_loss', val_loss, epoch_num)
+        logging.info('Validation - epoch %d - val_dice_loss: %f, val_ce_loss: %f, val_loss: %f' % (epoch_num, val_dice_loss, val_ce_loss, val_loss))
 
         if val_loss < best_val_loss:
             best_val_loss = val_loss
