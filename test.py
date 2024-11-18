@@ -44,7 +44,7 @@ def inference(args, model, test_save_path=None):
     model.eval()
     metric_list = 0.0
     
-    for i_batch, sampled_batch in tqdm(enumerate(testloader)):
+    for i_batch, sampled_batch in tqdm(enumerate(testloader, start=1)):
         h, w = sampled_batch["image"].size()[2:]
         image, label, case_name = sampled_batch["image"], sampled_batch["label"], sampled_batch['case_name'][0]
         

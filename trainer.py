@@ -82,7 +82,7 @@ def trainer_coca(args, model, snapshot_path):
         train_loss = 0.0
         
         model.train()
-        for i_batch, sampled_batch in enumerate(trainloader):
+        for i_batch, sampled_batch in enumerate(trainloader, start=1):
             image_batch, label_batch = sampled_batch['image'], sampled_batch['label']
             image_batch, label_batch = image_batch.cuda(), label_batch.cuda()
 
@@ -136,7 +136,7 @@ def trainer_coca(args, model, snapshot_path):
         
         model.eval()
         with torch.no_grad():
-            for i_batch, sampled_batch in enumerate(valloader):
+            for i_batch, sampled_batch in enumerate(valloader, start=1):
                 image_batch, label_batch = sampled_batch['image'], sampled_batch['label']
                 image_batch, label_batch = image_batch.cuda(), label_batch.cuda()
                 
