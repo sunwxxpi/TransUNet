@@ -4,8 +4,7 @@ import argparse
 import numpy as np
 import torch
 import torch.backends.cudnn as cudnn
-from networks.transunet.vit_seg_modeling import VisionTransformer as ViT_seg
-from networks.transunet.vit_seg_modeling import CONFIGS as CONFIGS_ViT_seg
+from networks.emcad.networks import EMCADNet
 from trainer import trainer_coca
 
 parser = argparse.ArgumentParser()
@@ -91,13 +90,16 @@ if __name__ == "__main__":
 
     if not os.path.exists(snapshot_path):
         os.makedirs(snapshot_path)
-    config_vit = CONFIGS_ViT_seg[args.vit_name]
-    config_vit.n_classes = args.num_classes
-    config_vit.n_skip = args.n_skip
-    if args.vit_name.find('R50') != -1:
-        config_vit.patches.grid = (int(args.img_size / args.vit_patches_size), int(args.img_size / args.vit_patches_size))
-    net = ViT_seg(config_vit, img_size=args.img_size).cuda()
-    net.load_from(weights=np.load(config_vit.pretrained_path))
+
+    net = EMCADNet(num_classes=args.num_classes, 
+                   kernel_sizes=args.kernel_sizes, 
+                   expansion_factor=args.expansion_factor, 
+                   dw_parallel=not args.no_dw_parallel, 
+                   add=not args.concatenation, 
+                   lgag_ks=args.lgag_ks, 
+                   activation=args.activation_mscb, 
+                   encoder=args.encoder, 
+                   pretrain= not args.no_pretrain)
 
     trainer = {'COCA': trainer_coca}
     trainer[dataset_name](args, net, snapshot_path)
