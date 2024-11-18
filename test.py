@@ -84,7 +84,7 @@ if __name__ == "__main__":
             'volume_path': './data/COCA/test_vol_h5',
             'list_dir': './data/COCA/lists_COCA',
             'num_classes': 4,
-            'max_epochs': 1000,
+            'max_epochs': 300,
             'batch_size': 48,
             'base_lr': 0.00001,
             'z_spacing': 3,

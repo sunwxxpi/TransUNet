@@ -95,7 +95,7 @@ class RandomGenerator:
     """Compose random augmentations and preprocessing for training."""
     def __init__(self, output_size):
         self.transform = T.Compose([
-            # RandomAugmentation(),
+            RandomAugmentation(),
             Resize(output_size),
             ToTensor()
         ])
