@@ -11,8 +11,6 @@ from tqdm import tqdm
 from torch.utils.data import DataLoader
 from datasets.dataset import COCA_dataset
 from utils import test_single_volume
-from networks.transunet.vit_seg_modeling import VisionTransformer as ViT_seg
-from networks.transunet.vit_seg_modeling import CONFIGS as CONFIGS_ViT_seg
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--volume_path', type=str, default='./data/COCA/test_vol_h5', help='root dir for validation volume data')
