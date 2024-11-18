@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from torchvision import transforms as T
 from tqdm import tqdm
-from utils import PolyLRScheduler, DiceLoss
+from utils import powerset, PolyLRScheduler, DiceLoss
 from datasets.dataset import shuffle_within_batch, COCA_dataset, RandomGenerator, Resize, ToTensor
 
 def trainer_coca(args, model, snapshot_path):
