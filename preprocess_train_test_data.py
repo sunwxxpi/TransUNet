@@ -6,7 +6,7 @@ import h5py
 
 # Paths and configurations
 DATASET_DIR = '/home/psw/TransUNet/data/nnUNet_raw/Dataset001_COCA'
-OUTPUT_DIR = '/home/psw/TransUNet/data/COCA'
+OUTPUT_DIR = '/home/psw/TransUNet/data/COCA_new'
 LIST_DIR = os.path.join(OUTPUT_DIR, 'lists_COCA')
 os.makedirs(LIST_DIR, exist_ok=True)
 
@@ -29,7 +29,7 @@ SPLITS = {
 # Function to process a single file
 def process_file(ct_path, seg_path, save_path, list_file, split):
     with open(list_file, 'w') as list_f:
-        for ct_file in tqdm(os.listdir(ct_path), desc=f'Processing {split}', unit='files'):
+        for ct_file in tqdm(sorted(os.listdir(ct_path)), desc=f'Processing {split}', unit='files'):
             base_name = ct_file.replace('_0000.nii.gz', '')  # Base name extraction
             case_number = base_name.split('_')[-1].zfill(4)  # Padded case number
             image_path = os.path.join(ct_path, ct_file)
