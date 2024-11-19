@@ -87,7 +87,7 @@ if __name__ == "__main__":
             'max_epochs': 300,
             'batch_size': 48,
             'base_lr': 0.00001,
-            'img_size': 512,
+            'img_size': 224,
             'z_spacing': 3,
         },
     }
