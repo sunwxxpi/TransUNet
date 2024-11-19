@@ -101,6 +101,7 @@ if __name__ == "__main__":
     args.max_epochs = dataset_config[dataset_name]['max_epochs']
     args.batch_size = dataset_config[dataset_name]['batch_size']
     args.base_lr = dataset_config[dataset_name]['base_lr']
+    args.img_size = dataset_config[dataset_name]['img_size']
     args.z_spacing = dataset_config[dataset_name]['z_spacing']
     args.is_pretrain = True
 

@@ -39,7 +39,6 @@ parser.add_argument('--vit_patches_size', type=int,
                     default=16, help='vit_patches_size, default is 16')
 args = parser.parse_args()
 
-
 if __name__ == "__main__":
     if not args.deterministic:
         cudnn.benchmark = True
