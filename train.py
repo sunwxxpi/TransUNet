@@ -30,14 +30,28 @@ parser.add_argument('--img_size', type=int,
                     default=224, help='input patch size of network input')
 parser.add_argument('--seed', type=int,
                     default=1234, help='random seed')
-parser.add_argument('--n_skip', type=int,
-                    default=3, help='using number of skip-connect, default is num')
-parser.add_argument('--vit_name', type=str,
-                    default='R50-ViT-B_16', help='select one vit model')
-parser.add_argument('--vit_patches_size', type=int,
-                    default=16, help='vit_patches_size, default is 16')
-args = parser.parse_args()
 
+# network related parameters
+parser.add_argument('--encoder', type=str,
+                    default='pvt_v2_b2', help='Name of encoder: pvt_v2_b2, pvt_v2_b0, resnet18, resnet34 ...')
+parser.add_argument('--expansion_factor', type=int,
+                    default=2, help='expansion factor in MSCB block')
+parser.add_argument('--kernel_sizes', type=int, nargs='+',
+                    default=[1, 3, 5], help='multi-scale kernel sizes in MSDC block')
+parser.add_argument('--lgag_ks', type=int,
+                    default=3, help='Kernel size in LGAG')
+parser.add_argument('--activation_mscb', type=str,
+                    default='relu6', help='activation used in MSCB: relu6 or relu')
+parser.add_argument('--no_dw_parallel', action='store_true', 
+                    default=False, help='use this flag to disable depth-wise parallel convolutions')
+parser.add_argument('--concatenation', action='store_true', 
+                    default=False, help='use this flag to concatenate feature maps in MSDC block')
+parser.add_argument('--no_pretrain', action='store_true', 
+                    default=False, help='use this flag to turn off loading pretrained enocder weights')
+parser.add_argument('--supervision', type=str,
+                    default='mutation', help='loss supervision: mutation, deep_supervision or last_layer')
+
+args = parser.parse_args()
 
 if __name__ == "__main__":
     if not args.deterministic:
@@ -60,7 +74,7 @@ if __name__ == "__main__":
             'max_epochs': 300,
             'batch_size': 48,
             'base_lr': 0.00001,
-            'img_size': 224,
+            'img_size': 512,
             'n_skip': 3,
             'vit_patches_size': 16
         },
@@ -72,21 +86,29 @@ if __name__ == "__main__":
     args.batch_size = dataset_config[dataset_name]['batch_size']
     args.base_lr = dataset_config[dataset_name]['base_lr']
     args.img_size = dataset_config[dataset_name]['img_size']
-    args.n_skip = dataset_config[dataset_name]['n_skip']
-    args.vit_patches_size = dataset_config[dataset_name]['vit_patches_size']
-    args.is_pretrain = True
-    args.exp = 'TU_' + dataset_name + str(args.img_size)
-    snapshot_path = "./model/{}/{}".format(args.exp, 'TU')
-    snapshot_path = snapshot_path + '_pretrain' if args.is_pretrain else snapshot_path
-    snapshot_path = snapshot_path + '_' + args.vit_name
-    snapshot_path = snapshot_path + '_skip' + str(args.n_skip)
-    snapshot_path = snapshot_path + '_vitpatch' + str(args.vit_patches_size) if args.vit_patches_size != 16 else snapshot_path
-    snapshot_path = snapshot_path + '_' + str(args.max_iterations)[0:2] + 'k' if args.max_iterations != 30000 else snapshot_path
-    snapshot_path = snapshot_path + '_epo' + str(args.max_epochs) if args.max_epochs != 30 else snapshot_path
-    snapshot_path = snapshot_path + '_bs' + str(args.batch_size)
-    snapshot_path = snapshot_path + '_lr' + str(args.base_lr) if args.base_lr != 0.01 else snapshot_path
-    snapshot_path = snapshot_path + '_' + str(args.img_size)
-    snapshot_path = snapshot_path + '_s' + str(args.seed) if args.seed != 1234 else snapshot_path
+    
+    if args.concatenation:
+        aggregation = 'concat'
+    else: 
+        aggregation = 'add'
+    
+    if args.no_dw_parallel:
+        dw_mode = 'series'
+    else: 
+        dw_mode = 'parallel'
+    
+    run = 1
+    args.exp = 'EMCAD_' + dataset_name + str(args.img_size)
+    snapshot_path = "./model/{}/{}".format(args.exp, args.encoder + '_EMCAD_kernel_sizes_' + str(args.kernel_sizes) + '_dw_' + dw_mode + '_' + aggregation + '_lgag_ks_' + str(args.lgag_ks) + '_ef' + str(args.expansion_factor) + '_act_mscb_' + args.activation_mscb + '_loss_' + args.supervision + '_output_final_layer_Run'+str(run))
+    snapshot_path = snapshot_path.replace('[', '').replace(']', '').replace(', ', '_')
+    
+    snapshot_path = snapshot_path + '_pretrain' if not args.no_pretrain else snapshot_path
+    snapshot_path = snapshot_path+'_'+str(args.max_iterations)[0:2]+'k' if args.max_iterations != 50000 else snapshot_path
+    snapshot_path = snapshot_path + '_epo' +str(args.max_epochs) if args.max_epochs != 300 else snapshot_path
+    snapshot_path = snapshot_path+'_bs'+str(args.batch_size)
+    snapshot_path = snapshot_path + '_lr' + str(args.base_lr) if args.base_lr != 0.0001 else snapshot_path
+    snapshot_path = snapshot_path + '_'+str(args.img_size)
+    snapshot_path = snapshot_path + '_s'+str(args.seed) if args.seed!=1234 else snapshot_path
 
     if not os.path.exists(snapshot_path):
         os.makedirs(snapshot_path)
@@ -99,7 +121,7 @@ if __name__ == "__main__":
                    lgag_ks=args.lgag_ks, 
                    activation=args.activation_mscb, 
                    encoder=args.encoder, 
-                   pretrain= not args.no_pretrain)
+                   pretrain= not args.no_pretrain).cuda()
 
     trainer = {'COCA': trainer_coca}
     trainer[dataset_name](args, net, snapshot_path)

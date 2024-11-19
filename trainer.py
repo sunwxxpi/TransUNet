@@ -86,7 +86,6 @@ def trainer_coca(args, model, snapshot_path):
             image_batch, label_batch = sampled_batch['image'], sampled_batch['label']
             image_batch, label_batch = image_batch.cuda(), label_batch.cuda()
 
-            
             P = model(image_batch)
 
             # 모델 출력이 리스트가 아닌 경우 리스트로 변환
@@ -94,7 +93,7 @@ def trainer_coca(args, model, snapshot_path):
                 P = [P]
 
             # 첫 번째 epoch과 batch에서 supervision 설정 초기화
-            if epoch_num == 0 and i_batch == 0:
+            if epoch_num == 1 and i_batch == 1:
                 n_outs = len(P)
                 out_idxs = list(range(n_outs))  # [0, 1, 2, 3]
                 
@@ -146,7 +145,7 @@ def trainer_coca(args, model, snapshot_path):
                 
                 writer.add_image('train/Image', image, iter_num)
                 
-                outputs = torch.argmax(torch.softmax(outputs, dim=1), dim=1, keepdim=True)
+                outputs = torch.argmax(torch.softmax(P[3], dim=1), dim=1, keepdim=True)
                 writer.add_image('train/Prediction', outputs[1, ...] * 50, iter_num)
 
                 labels = label_batch[1, ...].unsqueeze(0) * 50
@@ -180,7 +179,7 @@ def trainer_coca(args, model, snapshot_path):
                     P = [P]
 
                 # 첫 번째 epoch과 batch에서 supervision 설정 초기화
-                if epoch_num == 0 and i_batch == 0:
+                if epoch_num == 1 and i_batch == 1:
                     n_outs = len(P)
                     out_idxs = list(range(n_outs))  # [0, 1, 2, 3]
                     
