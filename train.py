@@ -49,7 +49,7 @@ parser.add_argument('--concatenation', action='store_true',
 parser.add_argument('--no_pretrain', action='store_true', 
                     default=False, help='use this flag to turn off loading pretrained enocder weights')
 parser.add_argument('--supervision', type=str,
-                    default='mutation', help='loss supervision: mutation, deep_supervision or last_layer')
+                    default='last_layer', help='loss supervision: mutation, deep_supervision or last_layer')
 
 args = parser.parse_args()
 
@@ -72,11 +72,9 @@ if __name__ == "__main__":
             'list_dir': './data/COCA/lists_COCA',
             'num_classes': 4,
             'max_epochs': 300,
-            'batch_size': 48,
+            'batch_size': 32,
             'base_lr': 0.00001,
             'img_size': 512,
-            'n_skip': 3,
-            'vit_patches_size': 16
         },
     }
     args.root_path = dataset_config[dataset_name]['root_path']
@@ -121,7 +119,7 @@ if __name__ == "__main__":
                    lgag_ks=args.lgag_ks, 
                    activation=args.activation_mscb, 
                    encoder=args.encoder, 
-                   pretrain= not args.no_pretrain).cuda()
+                   pretrain=not args.no_pretrain).cuda()
 
     trainer = {'COCA': trainer_coca}
     trainer[dataset_name](args, net, snapshot_path)

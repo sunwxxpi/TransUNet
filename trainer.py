@@ -104,7 +104,7 @@ def trainer_coca(args, model, snapshot_path):
                 else:
                     ss = [[-1]]  # 기본 설정
                 
-                print("Supervision strategy:", ss)
+                print("Supervision Strategy:", ss)
 
             # 손실 초기화
             loss = 0.0
@@ -190,7 +190,7 @@ def trainer_coca(args, model, snapshot_path):
                     else:
                         ss = [[-1]]  # 기본 설정
                     
-                    print("Supervision strategy:", ss)
+                    print("Supervision Strategy:", ss)
 
                 # 손실 초기화
                 loss = 0.0

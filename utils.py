@@ -122,7 +122,8 @@ def test_single_volume(image, label, net, classes, patch_size=[256, 256], test_s
             
             net.eval()
             with torch.no_grad():
-                outputs = net(input)
+                P = net(input)
+                outputs = P[-1]
                 out = torch.argmax(torch.softmax(outputs, dim=1), dim=1).squeeze(0)
                 out = out.cpu().detach().numpy()
                 
