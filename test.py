@@ -104,9 +104,9 @@ if __name__ == "__main__":
             'list_dir': './data/COCA/lists_COCA',
             'num_classes': 4,
             'max_epochs': 300,
-            'batch_size': 32,
+            'batch_size': 48,
             'base_lr': 0.00001,
-            'img_size': 512,
+            'img_size': 224,
             'z_spacing': 3,
         },
     }
