@@ -10,8 +10,8 @@ from glob import glob
 from tqdm import tqdm
 from torch.utils.data import DataLoader
 from datasets.dataset import COCA_dataset
-from networks.emcad.networks import EMCADNet
 from utils import test_single_volume
+from networks.emcad.networks import EMCADNet
 
 def inference(args, model, test_save_path=None):
     db_test = COCA_dataset(
