@@ -14,6 +14,24 @@ from utils import test_single_volume
 from networks.transunet.vit_seg_modeling import VisionTransformer as ViT_seg
 from networks.transunet.vit_seg_modeling import CONFIGS as CONFIGS_ViT_seg
 
+parser = argparse.ArgumentParser()
+parser.add_argument('--volume_path', type=str, default='./data/COCA/test_vol_h5', help='root dir for validation volume data')
+parser.add_argument('--dataset', type=str, default='COCA', help='experiment_name')
+parser.add_argument('--list_dir', type=str, default='./data/COCA/lists_COCA', help='list dir')
+parser.add_argument('--num_classes', type=int, default=4, help='output channel of network')
+parser.add_argument('--max_epochs', type=int, default=1000, help='maximum epoch number to train')
+parser.add_argument('--batch_size', type=int, default=96, help='batch_size per gpu')
+parser.add_argument('--img_size', type=int, default=224, help='input patch size of network input')
+parser.add_argument('--test_save_dir', type=str, default='./predictions', help='saving prediction as nii!')
+parser.add_argument('--deterministic', type=int, default=1, help='whether use deterministic training')
+parser.add_argument('--base_lr', type=float, default=0.01, help='segmentation network learning rate')
+parser.add_argument('--seed', type=int, default=1234, help='random seed')
+parser.add_argument('--vit_name', type=str, default='R50-ViT-B_16', help='select one vit model')
+parser.add_argument('--n_skip', type=int, default=3, help='using number of skip-connect, default is num')
+parser.add_argument('--vit_patches_size', type=int, default=16, help='vit_patches_size, default is 16')
+parser.add_argument('--is_savenii', action="store_true", help='whether to save results during inference')
+args = parser.parse_args()
+
 def inference(args, model, test_save_path=None):
     db_test = COCA_dataset(
         base_dir=args.volume_path, 
@@ -46,24 +64,6 @@ def inference(args, model, test_save_path=None):
     logging.info('Testing performance in best val model: mean_dice : %f mean_hd95 : %f' % (performance, mean_hd95))
     
     return "Testing Finished!"
-
-parser = argparse.ArgumentParser()
-parser.add_argument('--volume_path', type=str, default='./data/COCA/test_vol_h5', help='root dir for validation volume data')
-parser.add_argument('--dataset', type=str, default='COCA', help='experiment_name')
-parser.add_argument('--list_dir', type=str, default='./data/COCA/lists_COCA', help='list dir')
-parser.add_argument('--num_classes', type=int, default=4, help='output channel of network')
-parser.add_argument('--max_epochs', type=int, default=1000, help='maximum epoch number to train')
-parser.add_argument('--batch_size', type=int, default=96, help='batch_size per gpu')
-parser.add_argument('--img_size', type=int, default=224, help='input patch size of network input')
-parser.add_argument('--test_save_dir', type=str, default='./predictions', help='saving prediction as nii!')
-parser.add_argument('--deterministic', type=int, default=1, help='whether use deterministic training')
-parser.add_argument('--base_lr', type=float, default=0.01, help='segmentation network learning rate')
-parser.add_argument('--seed', type=int, default=1234, help='random seed')
-parser.add_argument('--vit_name', type=str, default='R50-ViT-B_16', help='select one vit model')
-parser.add_argument('--n_skip', type=int, default=3, help='using number of skip-connect, default is num')
-parser.add_argument('--vit_patches_size', type=int, default=16, help='vit_patches_size, default is 16')
-parser.add_argument('--is_savenii', action="store_true", help='whether to save results during inference')
-args = parser.parse_args()
 
 if __name__ == "__main__":
     if not args.deterministic:
@@ -125,7 +125,7 @@ if __name__ == "__main__":
     print(f"Loaded best model from: {best_model_path}")
     
     snapshot_name = snapshot_path.split('/')[-1]
-    log_folder = './test_log/test_log_' + args.exp
+    log_folder = f"./test_log/{args.arch + '_' + args.vit_name}/{dataset_name + '_' + str(args.img_size)}/{args.exp_setting}"
     os.makedirs(log_folder, exist_ok=True)
     logging.basicConfig(filename=log_folder + '/' + snapshot_name + ".txt", level=logging.INFO,
                         format='[%(asctime)s.%(msecs)03d] %(message)s', datefmt='%H:%M:%S')
@@ -136,7 +136,7 @@ if __name__ == "__main__":
 
     if args.is_savenii:
         args.test_save_dir = './predictions'
-        test_save_path = os.path.join(args.test_save_dir, args.exp, snapshot_name)
+        test_save_path = os.path.join(args.test_save_dir, args.arch + '_' + args.vit_name, snapshot_name)
         os.makedirs(test_save_path, exist_ok=True)
     else:
         test_save_path = None
