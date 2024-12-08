@@ -56,7 +56,7 @@ if __name__ == "__main__":
             'root_path': './data/COCA/train_npz',
             'list_dir': './data/COCA/lists_COCA',
             'num_classes': 4,
-            'max_epochs': 1,
+            'max_epochs': 300,
             'batch_size': 48,
             'base_lr': 0.00001,
             'img_size': 224,
