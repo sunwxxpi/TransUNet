@@ -17,8 +17,6 @@ parser.add_argument('--list_dir', type=str,
                     default='./lists/lists_COCA', help='list dir')
 parser.add_argument('--num_classes', type=int,
                     default=9, help='output channel of network')
-parser.add_argument('--max_iterations', type=int,
-                    default=30000, help='maximum epoch number to train')
 parser.add_argument('--max_epochs', type=int,
                     default=500, help='maximum epoch number to train')
 parser.add_argument('--batch_size', type=int,
@@ -31,10 +29,10 @@ parser.add_argument('--img_size', type=int,
                     default=224, help='input patch size of network input')
 parser.add_argument('--seed', type=int,
                     default=1234, help='random seed')
-parser.add_argument('--n_skip', type=int,
-                    default=3, help='using number of skip-connect, default is num')
 parser.add_argument('--vit_name', type=str,
                     default='R50-ViT-B_16', help='select one vit model')
+parser.add_argument('--n_skip', type=int,
+                    default=3, help='using number of skip-connect, default is num')
 parser.add_argument('--vit_patches_size', type=int,
                     default=16, help='vit_patches_size, default is 16')
 args = parser.parse_args()
@@ -51,18 +49,18 @@ if __name__ == "__main__":
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed(args.seed)
+    
     dataset_name = args.dataset
     dataset_config = {
         'COCA': {
             'root_path': './data/COCA/train_npz',
             'list_dir': './data/COCA/lists_COCA',
             'num_classes': 4,
-            'max_epochs': 300,
+            'max_epochs': 1,
             'batch_size': 48,
             'base_lr': 0.00001,
             'img_size': 224,
-            'n_skip': 3,
-            'vit_patches_size': 16
+            'exp_setting': 'default',
         },
     }
     args.root_path = dataset_config[dataset_name]['root_path']
@@ -72,29 +70,24 @@ if __name__ == "__main__":
     args.batch_size = dataset_config[dataset_name]['batch_size']
     args.base_lr = dataset_config[dataset_name]['base_lr']
     args.img_size = dataset_config[dataset_name]['img_size']
-    args.n_skip = dataset_config[dataset_name]['n_skip']
-    args.vit_patches_size = dataset_config[dataset_name]['vit_patches_size']
-    args.is_pretrain = True
-    args.exp = 'TU_' + dataset_name + str(args.img_size)
-    snapshot_path = "./model/{}/{}".format(args.exp, 'TU')
-    snapshot_path = snapshot_path + '_pretrain' if args.is_pretrain else snapshot_path
-    snapshot_path = snapshot_path + '_' + args.vit_name
-    snapshot_path = snapshot_path + '_skip' + str(args.n_skip)
-    snapshot_path = snapshot_path + '_vitpatch' + str(args.vit_patches_size) if args.vit_patches_size != 16 else snapshot_path
-    snapshot_path = snapshot_path + '_' + str(args.max_iterations)[0:2] + 'k' if args.max_iterations != 30000 else snapshot_path
-    snapshot_path = snapshot_path + '_epo' + str(args.max_epochs) if args.max_epochs != 30 else snapshot_path
+    args.exp_setting = dataset_config[dataset_name]['exp_setting']
+
+    args.arch = 'TU'
+    snapshot_path = f"./model/{args.arch + '_' + args.vit_name}/{dataset_name + '_' + str(args.img_size)}/{args.exp_setting}/{'epo' + str(args.max_epochs)}"
     snapshot_path = snapshot_path + '_bs' + str(args.batch_size)
-    snapshot_path = snapshot_path + '_lr' + str(args.base_lr) if args.base_lr != 0.01 else snapshot_path
-    snapshot_path = snapshot_path + '_' + str(args.img_size)
-    snapshot_path = snapshot_path + '_s' + str(args.seed) if args.seed != 1234 else snapshot_path
+    snapshot_path = snapshot_path + '_lr' + str(args.base_lr)
 
     if not os.path.exists(snapshot_path):
         os.makedirs(snapshot_path)
+        
     config_vit = CONFIGS_ViT_seg[args.vit_name]
     config_vit.n_classes = args.num_classes
     config_vit.n_skip = args.n_skip
+    config_vit.patches.size = (args.vit_patches_size, args.vit_patches_size)
+    
     if args.vit_name.find('R50') != -1:
         config_vit.patches.grid = (int(args.img_size / args.vit_patches_size), int(args.img_size / args.vit_patches_size))
+
     net = ViT_seg(config_vit, img_size=args.img_size).cuda()
     net.load_from(weights=np.load(config_vit.pretrained_path))
 
