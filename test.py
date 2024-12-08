@@ -51,16 +51,14 @@ parser.add_argument('--volume_path', type=str, default='./data/COCA/test_vol_h5'
 parser.add_argument('--dataset', type=str, default='COCA', help='experiment_name')
 parser.add_argument('--list_dir', type=str, default='./data/COCA/lists_COCA', help='list dir')
 parser.add_argument('--num_classes', type=int, default=4, help='output channel of network')
-parser.add_argument('--max_iterations', type=int, default=30000, help='maximum epoch number to train')
 parser.add_argument('--max_epochs', type=int, default=1000, help='maximum epoch number to train')
 parser.add_argument('--batch_size', type=int, default=96, help='batch_size per gpu')
 parser.add_argument('--img_size', type=int, default=224, help='input patch size of network input')
-parser.add_argument('--is_savenii', action="store_true", help='whether to save results during inference')
-parser.add_argument('--n_skip', type=int, default=3, help='using number of skip-connect, default is num')
 parser.add_argument('--test_save_dir', type=str, default='./predictions', help='saving prediction as nii!')
 parser.add_argument('--deterministic', type=int, default=1, help='whether use deterministic training')
 parser.add_argument('--base_lr', type=float, default=0.01, help='segmentation network learning rate')
 parser.add_argument('--seed', type=int, default=1234, help='random seed')
+parser.add_argument('--is_savenii', action="store_true", help='whether to save results during inference')
 
 # network related parameters
 parser.add_argument('--encoder', type=str,
@@ -91,29 +89,28 @@ if __name__ == "__main__":
     else:
         cudnn.benchmark = False
         cudnn.deterministic = True
+        
     random.seed(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed(args.seed)
 
-    # Dataset 구성 설정
+    dataset_name = args.dataset
     dataset_config = {
         'COCA': {
             'Dataset': COCA_dataset,
             'volume_path': './data/COCA/test_vol_h5',
             'list_dir': './data/COCA/lists_COCA',
             'num_classes': 4,
-            'max_epochs': 300,
-            'batch_size': 48,
+            'max_epochs': 1,
+            'batch_size': 6,
             'base_lr': 0.00001,
             'img_size': 224,
+            'exp_setting': 'default',
             'z_spacing': 3,
         },
     }
     
-    # Argument 설정
-    dataset_name = args.dataset
-    args.Dataset = dataset_config[dataset_name]['Dataset']
     args.volume_path = dataset_config[dataset_name]['volume_path']
     args.list_dir = dataset_config[dataset_name]['list_dir']
     args.num_classes = dataset_config[dataset_name]['num_classes']
@@ -121,33 +118,14 @@ if __name__ == "__main__":
     args.batch_size = dataset_config[dataset_name]['batch_size']
     args.base_lr = dataset_config[dataset_name]['base_lr']
     args.img_size = dataset_config[dataset_name]['img_size']
+    args.exp_setting = dataset_config[dataset_name]['exp_setting']
     args.z_spacing = dataset_config[dataset_name]['z_spacing']
     
-    if args.concatenation:
-        aggregation = 'concat'
-    else: 
-        aggregation = 'add'
-    
-    if args.no_dw_parallel:
-        dw_mode = 'series'
-    else: 
-        dw_mode = 'parallel'
+    args.arch = 'EMCAD'
+    snapshot_path = f"./model/{args.arch + '_' + args.encoder}/{dataset_name + '_' + str(args.img_size)}/{args.exp_setting}/{'epo' + str(args.max_epochs)}"
+    snapshot_path = snapshot_path + '_bs' + str(args.batch_size)
+    snapshot_path = snapshot_path + '_lr' + str(args.base_lr)
 
-    # Snapshot Path 설정
-    run = 1
-    args.exp = 'EMCAD_' + dataset_name + str(args.img_size)
-    snapshot_path = "./model/{}/{}".format(args.exp, args.encoder + '_EMCAD_kernel_sizes_' + str(args.kernel_sizes) + '_dw_' + dw_mode + '_' + aggregation + '_lgag_ks_' + str(args.lgag_ks) + '_ef' + str(args.expansion_factor) + '_act_mscb_' + args.activation_mscb + '_loss_' + args.supervision + '_output_final_layer_Run'+str(run))
-    snapshot_path = snapshot_path.replace('[', '').replace(']', '').replace(', ', '_')
-    
-    snapshot_path = snapshot_path + '_pretrain' if not args.no_pretrain else snapshot_path
-    snapshot_path = snapshot_path+'_'+str(args.max_iterations)[0:2]+'k' if args.max_iterations != 50000 else snapshot_path
-    snapshot_path = snapshot_path + '_epo' +str(args.max_epochs) if args.max_epochs != 300 else snapshot_path
-    snapshot_path = snapshot_path+'_bs'+str(args.batch_size)
-    snapshot_path = snapshot_path + '_lr' + str(args.base_lr) if args.base_lr != 0.0001 else snapshot_path
-    snapshot_path = snapshot_path + '_'+str(args.img_size)
-    snapshot_path = snapshot_path + '_s'+str(args.seed) if args.seed!=1234 else snapshot_path
-
-    # Model 설정 및 Best Model 불러오기
     net = EMCADNet(num_classes=args.num_classes, 
                    kernel_sizes=args.kernel_sizes, 
                    expansion_factor=args.expansion_factor, 
@@ -158,7 +136,6 @@ if __name__ == "__main__":
                    encoder=args.encoder, 
                    pretrain=not args.no_pretrain).cuda()
     
-    # Best 모델 경로 설정 및 로드
     best_model_path = glob(os.path.join(snapshot_path, '*_best_model.pth'))[0] # 유일한 best_model 파일 선택
     if not best_model_path:
         raise FileNotFoundError(f"Best model not found at {snapshot_path}")
@@ -166,9 +143,8 @@ if __name__ == "__main__":
     net.load_state_dict(torch.load(best_model_path))
     print(f"Loaded best model from: {best_model_path}")
     
-    # 로깅 설정
     snapshot_name = snapshot_path.split('/')[-1]
-    log_folder = './test_log/test_log_' + args.exp
+    log_folder = f"./test_log/{args.arch + '_' + args.encoder}/{dataset_name + '_' + str(args.img_size)}/{args.exp_setting}"
     os.makedirs(log_folder, exist_ok=True)
     logging.basicConfig(filename=log_folder + '/' + snapshot_name + ".txt", level=logging.INFO,
                         format='[%(asctime)s.%(msecs)03d] %(message)s', datefmt='%H:%M:%S')
@@ -177,7 +153,6 @@ if __name__ == "__main__":
     logging.info(str(args))
     logging.info(snapshot_name)
 
-    # 예측 저장 경로 설정
     if args.is_savenii:
         args.test_save_dir = './predictions'
         test_save_path = os.path.join(args.test_save_dir, args.exp, snapshot_name)

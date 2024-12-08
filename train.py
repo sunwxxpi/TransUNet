@@ -65,16 +65,18 @@ if __name__ == "__main__":
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed(args.seed)
+    
     dataset_name = args.dataset
     dataset_config = {
         'COCA': {
             'root_path': './data/COCA/train_npz',
             'list_dir': './data/COCA/lists_COCA',
             'num_classes': 4,
-            'max_epochs': 300,
-            'batch_size': 48,
+            'max_epochs': 1,
+            'batch_size': 6,
             'base_lr': 0.00001,
             'img_size': 224,
+            'exp_setting': 'default',
         },
     }
     args.root_path = dataset_config[dataset_name]['root_path']
@@ -84,29 +86,12 @@ if __name__ == "__main__":
     args.batch_size = dataset_config[dataset_name]['batch_size']
     args.base_lr = dataset_config[dataset_name]['base_lr']
     args.img_size = dataset_config[dataset_name]['img_size']
-    
-    if args.concatenation:
-        aggregation = 'concat'
-    else: 
-        aggregation = 'add'
-    
-    if args.no_dw_parallel:
-        dw_mode = 'series'
-    else: 
-        dw_mode = 'parallel'
-    
-    run = 1
-    args.exp = 'EMCAD_' + dataset_name + str(args.img_size)
-    snapshot_path = "./model/{}/{}".format(args.exp, args.encoder + '_EMCAD_kernel_sizes_' + str(args.kernel_sizes) + '_dw_' + dw_mode + '_' + aggregation + '_lgag_ks_' + str(args.lgag_ks) + '_ef' + str(args.expansion_factor) + '_act_mscb_' + args.activation_mscb + '_loss_' + args.supervision + '_output_final_layer_Run'+str(run))
-    snapshot_path = snapshot_path.replace('[', '').replace(']', '').replace(', ', '_')
-    
-    snapshot_path = snapshot_path + '_pretrain' if not args.no_pretrain else snapshot_path
-    snapshot_path = snapshot_path+'_'+str(args.max_iterations)[0:2]+'k' if args.max_iterations != 50000 else snapshot_path
-    snapshot_path = snapshot_path + '_epo' +str(args.max_epochs) if args.max_epochs != 300 else snapshot_path
-    snapshot_path = snapshot_path+'_bs'+str(args.batch_size)
-    snapshot_path = snapshot_path + '_lr' + str(args.base_lr) if args.base_lr != 0.0001 else snapshot_path
-    snapshot_path = snapshot_path + '_'+str(args.img_size)
-    snapshot_path = snapshot_path + '_s'+str(args.seed) if args.seed!=1234 else snapshot_path
+    args.exp_setting = dataset_config[dataset_name]['exp_setting']
+
+    args.arch = 'EMCAD'
+    snapshot_path = f"./model/{args.arch + '_' + args.encoder}/{dataset_name + '_' + str(args.img_size)}/{args.exp_setting}/{'epo' + str(args.max_epochs)}"
+    snapshot_path = snapshot_path + '_bs' + str(args.batch_size)
+    snapshot_path = snapshot_path + '_lr' + str(args.base_lr)
 
     if not os.path.exists(snapshot_path):
         os.makedirs(snapshot_path)
