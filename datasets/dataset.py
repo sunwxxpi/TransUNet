@@ -117,7 +117,7 @@ class COCA_dataset(Dataset):
             self.sample_list = train_samples if split == "train" else val_samples
         else:
             with open(os.path.join(list_dir, "test_vol.txt"), 'r') as f:
-                self.sample_list = f.readlines()
+                self.sample_list = sorted(f.readlines())
 
     def __len__(self):
         return len(self.sample_list)

@@ -42,26 +42,34 @@ def inference(args, model, test_save_path=None):
     
     logging.info("{} test iterations per epoch".format(len(testloader)))
     model.eval()
-    metric_list = 0.0
+    
+    metric_list_all = []
     
     for i_batch, sampled_batch in tqdm(enumerate(testloader, start=1)):
-        h, w = sampled_batch["image"].size()[2:]
         image, label, case_name = sampled_batch["image"], sampled_batch["label"], sampled_batch['case_name'][0]
         
-        # 메트릭 계산 및 로깅
         metric_i = test_single_volume(image, label, model, classes=args.num_classes, patch_size=[args.img_size, args.img_size],
                                       test_save_path=test_save_path, case=case_name, z_spacing=args.z_spacing)
-        metric_list += np.array(metric_i)
-        logging.info('%s mean_dice %f mean_hd95 %f' % (case_name, np.mean(metric_i, axis=0)[0], np.mean(metric_i, axis=0)[1]))
+        metric_list_all.append(metric_i)
+        
+        mean_dice_case = np.nanmean(metric_i, axis=0)[0]
+        mean_m_ap_case = np.nanmean(metric_i, axis=0)[1]
+        mean_hd95_case = np.nanmean(metric_i, axis=0)[2]
+        logging.info('%s - mean_dice: %.4f, mean_m_ap: %.4f, mean_hd95: %.2f' % (case_name, mean_dice_case, mean_m_ap_case, mean_hd95_case))
     
-    metric_list = metric_list / len(db_test)
+    metric_array = np.array(metric_list_all)
     
     for i in range(1, args.num_classes):
-        logging.info('Mean class %d mean_dice %f mean_hd95 %f' % (i, metric_list[i-1][0], metric_list[i-1][1]))
-    performance = np.mean(metric_list, axis=0)[0]
-    mean_hd95 = np.mean(metric_list, axis=0)[1]
+        class_dice = np.nanmean(metric_array[:, i-1, 0])
+        class_m_ap = np.nanmean(metric_array[:, i-1, 1])
+        class_hd95 = np.nanmean(metric_array[:, i-1, 2])
+        logging.info('Mean class %d - mean_dice: %.4f, mean_m_ap: %.4f, mean_hd95: %.2f' % (i, class_dice, class_m_ap, class_hd95))
+        
+    mean_dice = np.nanmean(metric_array[:,:,0])
+    mean_m_ap = np.nanmean(metric_array[:,:,1])
+    mean_hd95 = np.nanmean(metric_array[:,:,2])
     
-    logging.info('Testing performance in best val model: mean_dice : %f mean_hd95 : %f' % (performance, mean_hd95))
+    logging.info('Testing performance in best val model - mean_dice : %.4f, mean_m_ap : %.4f, mean_hd95 : %.2f' % (mean_dice, mean_m_ap, mean_hd95))
     
     return "Testing Finished!"
 
