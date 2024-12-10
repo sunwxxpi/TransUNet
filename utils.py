@@ -4,8 +4,8 @@ import torch.nn as nn
 import SimpleITK as sitk
 from torch.optim.lr_scheduler import _LRScheduler
 from sklearn.metrics import precision_recall_curve, auc
-from scipy.ndimage import zoom
 from scipy.spatial.distance import directed_hausdorff
+from scipy.ndimage import zoom
 
 
 class PolyLRScheduler(_LRScheduler):
