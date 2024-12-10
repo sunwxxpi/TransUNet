@@ -3,8 +3,9 @@ import torch
 import torch.nn as nn
 import SimpleITK as sitk
 from torch.optim.lr_scheduler import _LRScheduler
-from scipy.ndimage import zoom
+from sklearn.metrics import precision_recall_curve, auc
 from scipy.spatial.distance import directed_hausdorff
+from scipy.ndimage import zoom
 
 
 class PolyLRScheduler(_LRScheduler):
@@ -102,6 +103,13 @@ def compute_dice_coefficient(mask_gt, mask_pred):
     return 2 * volume_intersect / volume_sum
 
 
+def compute_average_precision(mask_gt, mask_pred):
+    """Compute Average Precision (AP) score."""
+    precision, recall, _ = precision_recall_curve(mask_gt.flatten(), mask_pred.flatten())
+    
+    return auc(recall, precision)
+
+
 def compute_hausdorff_distance(mask_gt, mask_pred):
     """Compute Hausdorff Distance (HD)."""
     gt_points = np.transpose(np.nonzero(mask_gt))
@@ -122,15 +130,18 @@ def calculate_metric_percase(pred, gt):
 
     if gt.sum() == 0 and pred.sum() == 0:
         dice = 1
+        m_ap = 1
         hd = 0
     elif gt.sum() == 0 and pred.sum() > 0:
         dice = 0
+        m_ap = 0
         hd = np.NaN
     else:
         dice = compute_dice_coefficient(gt, pred)
+        m_ap = compute_average_precision(gt, pred)
         hd = compute_hausdorff_distance(gt, pred)
 
-    return dice, hd
+    return dice, m_ap, hd
 
 
 def test_single_volume(image, label, net, classes, patch_size=[256, 256], test_save_path=None, case=None, z_spacing=1):
@@ -150,8 +161,7 @@ def test_single_volume(image, label, net, classes, patch_size=[256, 256], test_s
             
             net.eval()
             with torch.no_grad():
-                P = net(input)
-                outputs = P[-1]
+                outputs = net(input)
                 out = torch.argmax(torch.softmax(outputs, dim=1), dim=1).squeeze(0)
                 out = out.cpu().detach().numpy()
                 
