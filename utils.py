@@ -131,47 +131,57 @@ def calculate_metric_percase(pred, gt):
     return dice, m_ap, hd
 
 
-def test_single_volume(image, label, net, classes, patch_size=[256, 256], test_save_path=None, case=None, z_spacing=1):
-    image = image.squeeze(0).cpu().detach().numpy()
-    label = label.squeeze(0).cpu().detach().numpy()
-    
-    if len(image.shape) == 3:
-        prediction = np.zeros_like(label)
-        
-        for ind in range(image.shape[0]):
-            slice = image[ind, :, :]
-            x, y = slice.shape[0], slice.shape[1]
-            if x != patch_size[0] or y != patch_size[1]:
-                slice = zoom(slice, (patch_size[0] / x, patch_size[1] / y), order=3)
-                
-            input = torch.from_numpy(slice).unsqueeze(0).unsqueeze(0).float().cuda()
-            
-            net.eval()
-            with torch.no_grad():
-                outputs = net(input)
-                out = torch.argmax(torch.softmax(outputs, dim=1), dim=1).squeeze(0)
-                out = out.cpu().detach().numpy()
-                
-                if x != patch_size[0] or y != patch_size[1]:
-                    pred = zoom(out, (x / patch_size[0], y / patch_size[1]), order=0)
-                else:
-                    pred = out
-                prediction[ind] = pred
-    else:
-        input = torch.from_numpy(image).unsqueeze(0).unsqueeze(0).float().cuda()
+def test_single_volume(image_volume, prev_volume, next_volume, label_volume, net, classes, patch_size=[224, 224], test_save_path=None, case=None, z_spacing=1):
+    h, w = patch_size  # 학습에 사용한 (224, 224) 크기
+    original_h, original_w = image_volume.shape[1], image_volume.shape[2]  # 원본 크기 (512, 512)
+    depth = image_volume.shape[0]  # 슬라이스 개수
+
+    # 예측 및 레이블 볼륨 초기화 (원본 크기인 512x512로 설정)
+    prediction_volume = np.zeros((depth, original_h, original_w), dtype=np.float32)
+    label_volume_resized = np.zeros((depth, original_h, original_w), dtype=np.float32)
+
+    for slice_index in range(depth):
+        # 슬라이스 데이터 가져오기
+        slice_img = image_volume[slice_index].cpu().detach().numpy()
+        slice_prev = prev_volume[slice_index].cpu().detach().numpy()
+        slice_next = next_volume[slice_index].cpu().detach().numpy()
+        slice_label = label_volume[slice_index].cpu().detach().numpy()
+
+        # 슬라이스를 모델 입력 크기인 (224, 224)로 조정
+        slice_img_resized = zoom(slice_img, (h / original_h, w / original_w), order=3)
+        slice_prev_resized = zoom(slice_prev, (h / original_h, w / original_w), order=3)
+        slice_next_resized = zoom(slice_next, (h / original_h, w / original_w), order=3)
+        slice_label_resized = zoom(slice_label, (h / original_h, w / original_w), order=0)
+
+        # PyTorch 텐서로 변환하고 GPU로 이동
+        input_img = torch.from_numpy(slice_img_resized).unsqueeze(0).unsqueeze(0).float().cuda()
+        input_prev = torch.from_numpy(slice_prev_resized).unsqueeze(0).unsqueeze(0).float().cuda()
+        input_next = torch.from_numpy(slice_next_resized).unsqueeze(0).unsqueeze(0).float().cuda()
+
+        # 모델 추론
         net.eval()
         with torch.no_grad():
-            out = torch.argmax(torch.softmax(net(input), dim=1), dim=1).squeeze(0)
-            prediction = out.cpu().detach().numpy()
-    
+            slice_inputs = (input_prev, input_img, input_next)
+            outputs, attn_maps, _ = net(slice_inputs, return_attn=True)
+            out = torch.argmax(torch.softmax(outputs, dim=1), dim=1).squeeze(0)
+            out = out.cpu().detach().numpy()
+
+            # 예측 결과를 원본 크기 (512, 512)로 복원
+            pred = zoom(out, (original_h / h, original_w / w), order=0)
+
+            # 예측 및 레이블 결과 저장
+            prediction_volume[slice_index] = pred
+            label_volume_resized[slice_index] = slice_label
+
+    # 메트릭 계산
     metric_list = []
     for i in range(1, classes):
-        metric_list.append(calculate_metric_percase(prediction == i, label == i))
+        metric_list.append(calculate_metric_percase(prediction_volume == i, label_volume_resized == i))
 
     if test_save_path is not None:
-        img_itk = sitk.GetImageFromArray(image.astype(np.float32))
-        prd_itk = sitk.GetImageFromArray(prediction.astype(np.float32))
-        lab_itk = sitk.GetImageFromArray(label.astype(np.float32))
+        img_itk = sitk.GetImageFromArray(image_volume.cpu().detach().numpy())
+        prd_itk = sitk.GetImageFromArray(prediction_volume)
+        lab_itk = sitk.GetImageFromArray(label_volume.cpu().detach().numpy())
         img_itk.SetSpacing((0.375, 0.375, z_spacing))
         prd_itk.SetSpacing((0.375, 0.375, z_spacing))
         lab_itk.SetSpacing((0.375, 0.375, z_spacing))

@@ -45,10 +45,16 @@ def inference(args, model, test_save_path=None):
     
     metric_list_all = []
     
-    for i_batch, sampled_batch in tqdm(enumerate(testloader, start=1)):
-        image, label, case_name = sampled_batch["image"], sampled_batch["label"], sampled_batch['case_name'][0]
+    for i_batch, sampled_batch in tqdm(enumerate(testloader)):
+        image_volume = sampled_batch["image"].squeeze(0)
+        prev_volume = sampled_batch["prev_image"].squeeze(0)
+        next_volume = sampled_batch["next_image"].squeeze(0)
+        label_volume = sampled_batch["label"].squeeze(0)
+        case_name = sampled_batch['case_name'][0]
         
-        metric_i = test_single_volume(image, label, model, classes=args.num_classes, patch_size=[args.img_size, args.img_size],
+        # 메트릭 계산 및 로깅
+        metric_i = test_single_volume(image_volume, prev_volume, next_volume, label_volume,
+                                      model, classes=args.num_classes, patch_size=[args.img_size, args.img_size], 
                                       test_save_path=test_save_path, case=case_name, z_spacing=args.z_spacing)
         metric_list_all.append(metric_i)
         
@@ -97,7 +103,7 @@ if __name__ == "__main__":
             'batch_size': 48,
             'base_lr': 0.00001,
             'img_size': 224,
-            'exp_setting': 'default',
+            'exp_setting': 'sa_window',
             'z_spacing': 3,
         },
     }

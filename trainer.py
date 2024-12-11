@@ -2,9 +2,11 @@ import os
 import sys
 import random
 import logging
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import matplotlib.pyplot as plt
 from torch.nn.modules.loss import CrossEntropyLoss
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
@@ -12,6 +14,60 @@ from torchvision import transforms as T
 from tqdm import tqdm
 from utils import PolyLRScheduler, DiceLoss
 from datasets.dataset import shuffle_within_batch, COCA_dataset, RandomGenerator, Resize, ToTensor
+
+def save_attention_maps(attention_maps, image_ids, epoch, save_dir='attention_maps'):
+    """
+    배치 내의 모든 슬라이스에 대한 어텐션 맵을 저장하는 함수.
+
+    Args:
+        attention_maps (dict): 'self', 'prev', 'next' 키를 가지는 딕셔너리이며, 각 값은 어텐션 맵 텐서입니다.
+        image_ids (list): 이미지 식별자의 리스트 (배치 크기만큼의 길이).
+        epoch (int): 현재 에폭 번호.
+        save_dir (str): 어텐션 맵을 저장할 디렉토리 경로.
+    """
+    # 에폭별 디렉토리 생성
+    save_dir = os.path.join(save_dir, f'epoch_{epoch}')
+    os.makedirs(save_dir, exist_ok=True)
+    
+    # 배치 크기 및 기타 정보 추출
+    batch_size = attention_maps['self'].size(0)  # 배치 크기
+    num_heads = attention_maps['self'].size(1)   # 헤드 수
+    N = attention_maps['self'].size(2)           # 토큰 개수 (예: H*W)
+    h = w = int(np.sqrt(N))                      # 패치맵의 높이와 너비
+
+    # 배치 내의 모든 슬라이스에 대해 반복
+    for slice_index in range(batch_size):
+        image_id = image_ids[slice_index]  # 현재 슬라이스의 이미지 식별자
+        # 각 슬라이스에 대한 어텐션 맵 저장
+        attention_types = ['prev', 'self', 'next']
+        attention_maps_list = []
+        for attn_type in attention_types:
+            attn_map = attention_maps[attn_type][slice_index]  # (num_heads, N, N)
+            # 헤드별로 어텐션 맵을 평균화
+            attn_map_avg = attn_map.mean(dim=0)  # (N, N)
+            # 열 방향으로 평균 계산 (쿼리 위치에 대한 전체 키 위치의 평균)
+            attn_map_mean = attn_map_avg.mean(dim=0).cpu().numpy()  # (N,)
+            # 어텐션 맵을 2D 이미지로 변환
+            attn_map_img = attn_map_mean.reshape(h, w)
+            # 어텐션 맵 정규화
+            attn_map_norm = (attn_map_img - attn_map_img.min()) / (attn_map_img.max() - attn_map_img.min() + 1e-8)
+            attention_maps_list.append(attn_map_norm)
+        
+        # 세 개의 어텐션 맵을 하나의 이미지로 합치기
+        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+        titles = ['Prev Slice Attention', 'Self-Attention', 'Next Slice Attention']
+        vmin, vmax = 0.0, 1.0
+        for i, attn_map in enumerate(attention_maps_list):
+            im = axes[i].imshow(attn_map, cmap='hot', interpolation='nearest', vmin=vmin, vmax=vmax)
+            axes[i].set_title(titles[i])
+            axes[i].axis('off')
+            # 컬러바 추가
+            fig.colorbar(im, ax=axes[i], fraction=0.046, pad=0.04)
+        plt.suptitle(f'Epoch {epoch}, Image ID: {image_id}')
+        # 이미지 식별자를 파일명에 포함
+        filename = f'{image_id}.png'
+        plt.savefig(os.path.join(save_dir, filename))
+        plt.close()
 
 def trainer_coca(args, model, snapshot_path):
     logging.basicConfig(filename=snapshot_path + "/log.txt", 
@@ -62,8 +118,8 @@ def trainer_coca(args, model, snapshot_path):
     
     dice_loss_class = DiceLoss(num_classes)
     ce_loss_class = CrossEntropyLoss()
-    # optimizer = optim.SGD(model.parameters(), lr=base_lr, weight_decay=3e-5, momentum=0.99, nesterov=True)
-    optimizer = optim.AdamW(model.parameters(), lr=base_lr, weight_decay=1e-4)
+    optimizer = optim.SGD(model.parameters(), lr=base_lr, weight_decay=3e-5, momentum=0.99, nesterov=True)
+    # optimizer = optim.AdamW(model.parameters(), lr=base_lr, weight_decay=1e-4)
     
     max_iterations = args.max_epochs * len(trainloader)
     scheduler = PolyLRScheduler(optimizer, initial_lr=base_lr, max_steps=max_iterations)
@@ -82,12 +138,16 @@ def trainer_coca(args, model, snapshot_path):
         train_loss = 0.0
         
         model.train()
-        for i_batch, sampled_batch in enumerate(trainloader, start=1):
-            image_batch, label_batch = sampled_batch['image'], sampled_batch['label']
-            image_batch, label_batch = image_batch.cuda(), label_batch.cuda()
-
-            outputs = model(image_batch)
+        for i_batch, sampled_batch in enumerate(trainloader):
+            image_batch = sampled_batch['image'].cuda()
+            prev_image_batch = sampled_batch['prev_image'].cuda()
+            next_image_batch = sampled_batch['next_image'].cuda()
+            label_batch = sampled_batch['label'].cuda()
+            case_name = sampled_batch['case_name']
             
+            slice_inputs = (prev_image_batch, image_batch, next_image_batch)
+            outputs, attention_maps, attn_weights = model(slice_inputs, return_attn=True)
+
             dice_loss = dice_loss_class(outputs, label_batch, softmax=True)
             ce_loss = ce_loss_class(outputs, label_batch)
             loss = (0.5 * dice_loss) + (0.5 * ce_loss)
@@ -106,18 +166,16 @@ def trainer_coca(args, model, snapshot_path):
             train_loss += loss.item()
 
             logging.info('epoch %d, iteration %d - dice_loss: %f, ce_loss: %f, loss_total: %f' % (epoch_num, iter_num, dice_loss.item(), ce_loss.item(), loss.item()))
-            
-            if iter_num % 50 == 0:
-                image = image_batch[1, 0:1, :, :]
-                image = (image - image.min()) / (image.max() - image.min())
-                
-                writer.add_image('train/Image', image, iter_num)
-                
-                outputs = torch.argmax(torch.softmax(outputs, dim=1), dim=1, keepdim=True)
-                writer.add_image('train/Prediction', outputs[1, ...] * 50, iter_num)
-
-                labels = label_batch[1, ...].unsqueeze(0) * 50
-                writer.add_image('train/GroundTruth', labels, iter_num)
+        
+        # TensorBoard에 기록
+        center_image = image_batch[1, 0:1, :, :]
+        center_image = (center_image - center_image.min()) / (center_image.max() - center_image.min())
+        pred = torch.argmax(torch.softmax(outputs, dim=1), dim=1, keepdim=True)
+        labels = label_batch[1, ...].unsqueeze(0) * 50
+        
+        writer.add_image('train/Center_Image', center_image, iter_num)
+        writer.add_image('train/Prediction', pred[1, ...] * 50, iter_num)
+        writer.add_image('train/GroundTruth', labels, iter_num)
 
         train_dice_loss /= len(trainloader)
         train_ce_loss /= len(trainloader)
@@ -128,6 +186,9 @@ def trainer_coca(args, model, snapshot_path):
         writer.add_scalar('train/ce_loss', train_ce_loss, epoch_num)
         writer.add_scalar('train/train_loss', train_loss, epoch_num)
         logging.info('Train - epoch %d - train_dice_loss: %f, train_ce_loss: %f, train_loss: %f' % (epoch_num, train_dice_loss, train_ce_loss, train_loss))
+        
+        # Attention Maps 저장
+        # save_attention_maps(attention_maps, case_name, epoch_num)
 
         # Validation step after each epoch
         val_dice_loss = 0.0
@@ -136,11 +197,14 @@ def trainer_coca(args, model, snapshot_path):
         
         model.eval()
         with torch.no_grad():
-            for i_batch, sampled_batch in enumerate(valloader, start=1):
-                image_batch, label_batch = sampled_batch['image'], sampled_batch['label']
-                image_batch, label_batch = image_batch.cuda(), label_batch.cuda()
+            for i_batch, sampled_batch in enumerate(valloader):
+                image_batch = sampled_batch['image'].cuda()
+                prev_image_batch = sampled_batch['prev_image'].cuda()
+                next_image_batch = sampled_batch['next_image'].cuda()
+                label_batch = sampled_batch['label'].cuda()
                 
-                outputs = model(image_batch)
+                slice_inputs = (prev_image_batch, image_batch, next_image_batch)
+                outputs = model(slice_inputs)
                 
                 dice_loss = dice_loss_class(outputs, label_batch, softmax=True)
                 ce_loss = ce_loss_class(outputs, label_batch)

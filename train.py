@@ -60,7 +60,7 @@ if __name__ == "__main__":
             'batch_size': 48,
             'base_lr': 0.00001,
             'img_size': 224,
-            'exp_setting': 'default',
+            'exp_setting': 'sa_window',
         },
     }
     args.root_path = dataset_config[dataset_name]['root_path']
