@@ -8,6 +8,5 @@ attention_maps
 data
 model
 
-lists
 predictions
 test_log
