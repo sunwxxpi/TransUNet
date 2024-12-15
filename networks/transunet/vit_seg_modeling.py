@@ -337,11 +337,11 @@ class Embeddings(nn.Module):
         self.window_size = 7
         self.num_global_tokens = 1
 
-        self.cross_attention_multi_1 = NonLocalBlock(in_channels=1024, inter_channels=512, num_heads=16,
+        self.cross_attention_prev = NonLocalBlock(in_channels=1024, inter_channels=512, num_heads=16,
                                                      window_size=self.window_size, num_global_tokens=self.num_global_tokens)
-        self.cross_attention_multi_2 = NonLocalBlock(in_channels=1024, inter_channels=512, num_heads=16,
+        self.cross_attention_self = NonLocalBlock(in_channels=1024, inter_channels=512, num_heads=16,
                                                      window_size=self.window_size, num_global_tokens=self.num_global_tokens)
-        self.cross_attention_multi_3 = NonLocalBlock(in_channels=1024, inter_channels=512, num_heads=16,
+        self.cross_attention_next = NonLocalBlock(in_channels=1024, inter_channels=512, num_heads=16,
                                                      window_size=self.window_size, num_global_tokens=self.num_global_tokens)
         self.downcross_three = DownCross(3072, 768, 1024)
         
@@ -371,20 +371,20 @@ class Embeddings(nn.Module):
         x_prev, x, x_next = inputs
         
         if self.hybrid:
-            x, features = self.hybrid_model(x)            
             x_prev, features1 = self.hybrid_model(x_prev)
+            x, features = self.hybrid_model(x)            
             x_next, features2 = self.hybrid_model(x_next)
         else:
-            x = self.patch_embeddings(x)
             x_prev = self.patch_embeddings(x_prev)
+            x = self.patch_embeddings(x)
             x_next = self.patch_embeddings(x_next)
             features = None
 
-        xt1, attn_maps_self = self.cross_attention_multi_1(x, x)
-        xt2, attn_maps_prev = self.cross_attention_multi_2(x, x_prev)
-        xt3, attn_maps_next = self.cross_attention_multi_3(x, x_next)
+        xt1, attn_maps_prev = self.cross_attention_prev(x, x_prev)
+        xt2, attn_maps_self = self.cross_attention_self(x, x)
+        xt3, attn_maps_next = self.cross_attention_next(x, x_next)
         
-        xt = torch.cat([xt2, xt1, xt3], dim=1)
+        xt = torch.cat([xt1, xt2, xt3], dim=1)
         x = self.downcross_three(xt)
 
         x = x.flatten(2)
@@ -394,8 +394,8 @@ class Embeddings(nn.Module):
         embeddings = self.dropout(embeddings)
         
         attention_maps = {
-            'self': attn_maps_self,
             'prev': attn_maps_prev,
+            'self': attn_maps_self,
             'next': attn_maps_next
         }
         
@@ -575,8 +575,8 @@ class VisionTransformer(nn.Module):
         x_prev, x, x_next = inputs
         
         if x.size()[1] == 1:
-            x = x.repeat(1, 3, 1, 1)
             x_prev = x_prev.repeat(1, 3, 1, 1)
+            x = x.repeat(1, 3, 1, 1)
             x_next = x_next.repeat(1, 3, 1, 1)
             
         inputs = (x_prev, x, x_next)
