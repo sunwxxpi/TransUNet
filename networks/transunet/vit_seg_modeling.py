@@ -345,6 +345,9 @@ class Embeddings(nn.Module):
                                                      window_size=self.window_size, num_global_tokens=self.num_global_tokens)
         self.downcross_three = DownCross(3072, 768, 1024)
         
+        # Slice Fusion을 위한 학습 가능한 가중치 (3개 slice: prev, self, next)
+        self.slice_fusion_weights = nn.Parameter(torch.tensor([0.25, 1.0, 0.25]))
+        
         if config.patches.get("grid") is not None:   # ResNet
             grid_size = config.patches["grid"]
             patch_size = (img_size[0] // 16 // grid_size[0], img_size[1] // 16 // grid_size[1])
@@ -371,9 +374,9 @@ class Embeddings(nn.Module):
         x_prev, x, x_next = inputs
         
         if self.hybrid:
-            x_prev, features1 = self.hybrid_model(x_prev)
-            x, features = self.hybrid_model(x)            
-            x_next, features2 = self.hybrid_model(x_next)
+            x_prev, features_prev = self.hybrid_model(x_prev)
+            x, features = self.hybrid_model(x)
+            x_next, features_next = self.hybrid_model(x_next)
         else:
             x_prev = self.patch_embeddings(x_prev)
             x = self.patch_embeddings(x)
@@ -383,6 +386,14 @@ class Embeddings(nn.Module):
         xt1, attn_maps_prev = self.cross_attention_prev(x, x_prev)
         xt2, attn_maps_self = self.cross_attention_self(x, x)
         xt3, attn_maps_next = self.cross_attention_next(x, x_next)
+        
+        """ # softmax를 통해 세 슬라이스 가중치를 정규화
+        weights_fused = F.softmax(self.slice_fusion_weights, dim=0)
+
+        # 각 슬라이스에 가중치 적용 (prev: xt1, self: xt2, next: xt3)
+        xt1 *= weights_fused[0]
+        xt2 *= weights_fused[1]
+        xt3 *= weights_fused[2] """
         
         xt = torch.cat([xt1, xt2, xt3], dim=1)
         x = self.downcross_three(xt)
