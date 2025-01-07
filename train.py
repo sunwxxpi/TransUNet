@@ -15,7 +15,7 @@ parser.add_argument('--dataset', type=str,
 parser.add_argument('--list_dir', type=str,
                     default='./lists/lists_COCA', help='list dir')
 parser.add_argument('--num_classes', type=int,
-                    default=9, help='output channel of network')
+                    default=5, help='output channel of network')
 parser.add_argument('--max_iterations', type=int,
                     default=30000, help='maximum epoch number to train')
 parser.add_argument('--max_epochs', type=int,
@@ -71,7 +71,7 @@ if __name__ == "__main__":
         'COCA': {
             'root_path': '/home/psw/AVS-Diagnosis/COCA_1frame/train_npz',
             'list_dir': '/home/psw/AVS-Diagnosis/COCA_1frame/lists_COCA',
-            'num_classes': 4,
+            'num_classes': 5,
             'max_epochs': 300,
             'batch_size': 48,
             'base_lr': 0.00001,
