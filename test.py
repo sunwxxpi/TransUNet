@@ -18,7 +18,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--volume_path', type=str, default='./data/COCA/test_vol_h5', help='root dir for validation volume data')
 parser.add_argument('--dataset', type=str, default='COCA', help='experiment_name')
 parser.add_argument('--list_dir', type=str, default='./data/COCA/lists_COCA', help='list dir')
-parser.add_argument('--num_classes', type=int, default=4, help='output channel of network')
+parser.add_argument('--num_classes', type=int, default=5, help='output channel of network')
 parser.add_argument('--max_epochs', type=int, default=1000, help='maximum epoch number to train')
 parser.add_argument('--batch_size', type=int, default=96, help='batch_size per gpu')
 parser.add_argument('--img_size', type=int, default=224, help='input patch size of network input')
@@ -96,9 +96,9 @@ if __name__ == "__main__":
     dataset_config = {
         'COCA': {
             'Dataset': COCA_dataset,
-            'volume_path': './data/COCA/test_vol_h5',
-            'list_dir': './data/COCA/lists_COCA',
-            'num_classes': 4,
+            'root_path': '/home/psw/AVS-Diagnosis/COCA_3frames/train_npz',
+            'list_dir': '/home/psw/AVS-Diagnosis/COCA_3frames/lists_COCA',
+            'num_classes': 5,
             'max_epochs': 300,
             'batch_size': 48,
             'base_lr': 0.00001,
