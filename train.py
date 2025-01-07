@@ -53,8 +53,8 @@ if __name__ == "__main__":
     dataset_name = args.dataset
     dataset_config = {
         'COCA': {
-            'root_path': './data/COCA/train_npz',
-            'list_dir': './data/COCA/lists_COCA',
+            'root_path': '/home/psw/AVS-Diagnosis/COCA_1frame/train_npz',
+            'list_dir': '/home/psw/AVS-Diagnosis/COCA_1frame/lists_COCA',
             'num_classes': 4,
             'max_epochs': 300,
             'batch_size': 48,

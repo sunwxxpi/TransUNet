@@ -90,8 +90,8 @@ if __name__ == "__main__":
     dataset_config = {
         'COCA': {
             'Dataset': COCA_dataset,
-            'volume_path': './data/COCA/test_vol_h5',
-            'list_dir': './data/COCA/lists_COCA',
+            'volume_path': '/home/psw/AVS-Diagnosis/COCA_1frame/test_vol_h5',
+            'list_dir': '/home/psw/AVS-Diagnosis/COCA_1frame/lists_COCA',
             'num_classes': 4,
             'max_epochs': 300,
             'batch_size': 48,
