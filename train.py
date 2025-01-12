@@ -73,9 +73,9 @@ if __name__ == "__main__":
             'list_dir': '/home/psw/AVS-Diagnosis/COCA_1frame/lists_COCA',
             'num_classes': 5,
             'max_epochs': 300,
-            'batch_size': 48,
+            'batch_size': 16,
             'base_lr': 0.00001,
-            'img_size': 224,
+            'img_size': 512,
             'exp_setting': 'default',
         },
     }
