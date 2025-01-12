@@ -36,14 +36,14 @@ parser.add_argument('--lgag_ks', type=int,
                     default=3, help='Kernel size in LGAG')
 parser.add_argument('--activation_mscb', type=str,
                     default='relu6', help='activation used in MSCB: relu6 or relu')
-parser.add_argument('--no_dw_parallel', action='store_true', 
+parser.add_argument('--no_dw_parallel', action='store_true',
                     default=False, help='use this flag to disable depth-wise parallel convolutions')
-parser.add_argument('--concatenation', action='store_true', 
+parser.add_argument('--concatenation', action='store_true',
                     default=False, help='use this flag to concatenate feature maps in MSDC block')
-parser.add_argument('--no_pretrain', action='store_true', 
+parser.add_argument('--no_pretrain', action='store_true',
                     default=False, help='use this flag to turn off loading pretrained enocder weights')
 parser.add_argument('--supervision', type=str,
-                    default='last_layer', help='loss supervision: mutation, deep_supervision or last_layer')
+                    default='mutation', help='loss supervision: mutation, deep_supervision or last_layer')
 
 args = parser.parse_args()
 
