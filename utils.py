@@ -7,7 +7,6 @@ from sklearn.metrics import precision_recall_curve, auc
 from scipy.spatial.distance import directed_hausdorff
 from scipy.ndimage import zoom
 
-
 class PolyLRScheduler(_LRScheduler):
     def __init__(self, optimizer, initial_lr: float, max_steps: int, exponent: float = 0.9, current_step: int = None):
         self.optimizer = optimizer
@@ -25,7 +24,6 @@ class PolyLRScheduler(_LRScheduler):
         new_lr = self.initial_lr * (1 - current_step / self.max_steps) ** self.exponent
         for param_group in self.optimizer.param_groups:
             param_group['lr'] = new_lr
-
 
 class DiceLoss(nn.Module):
     def __init__(self, n_classes):
@@ -92,59 +90,41 @@ def powerset(seq):
             
             
 def compute_dice_coefficient(mask_gt, mask_pred):
-    """Compute Soerensen-Dice coefficient."""
     volume_sum = mask_gt.sum() + mask_pred.sum()
-    
     if volume_sum == 0:
         return np.NaN
-    
     volume_intersect = (mask_gt & mask_pred).sum()
-    
     return 2 * volume_intersect / volume_sum
 
-
 def compute_average_precision(mask_gt, mask_pred):
-    """Compute Average Precision (AP) score."""
     precision, recall, _ = precision_recall_curve(mask_gt.flatten(), mask_pred.flatten())
-    
     return auc(recall, precision)
 
-
 def compute_hausdorff_distance(mask_gt, mask_pred):
-    """Compute Hausdorff Distance (HD)."""
     gt_points = np.transpose(np.nonzero(mask_gt))
     pred_points = np.transpose(np.nonzero(mask_pred))
-    
     if len(gt_points) == 0 or len(pred_points) == 0:
         return np.NaN
-    
     hd_1 = directed_hausdorff(gt_points, pred_points)[0]
     hd_2 = directed_hausdorff(pred_points, gt_points)[0]
-    
     return max(hd_1, hd_2)
-
 
 def calculate_metric_percase(pred, gt):
     pred[pred > 0] = 1
     gt[gt > 0] = 1
 
     if gt.sum() == 0 and pred.sum() == 0:
-        dice = 1
-        m_ap = 1
-        hd = 0
+        return 1, 1, 0
     elif gt.sum() == 0 and pred.sum() > 0:
-        dice = 0
-        m_ap = 0
-        hd = np.NaN
+        return 0, 0, np.NaN
     else:
-        dice = compute_dice_coefficient(gt, pred)
-        m_ap = compute_average_precision(gt, pred)
-        hd = compute_hausdorff_distance(gt, pred)
+        return (
+            compute_dice_coefficient(gt, pred),
+            compute_average_precision(gt, pred),
+            compute_hausdorff_distance(gt, pred)
+        )
 
-    return dice, m_ap, hd
-
-
-def test_single_volume(image, label, net, classes, patch_size=[256, 256], test_save_path=None, case=None, z_spacing=1):
+def test_single_volume(image, label, net, classes, patch_size=[512, 512], test_save_path=None, case=None, z_spacing=1):
     image = image.squeeze(0).cpu().detach().numpy()
     label = label.squeeze(0).cpu().detach().numpy()
     

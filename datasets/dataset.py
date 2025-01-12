@@ -37,12 +37,6 @@ def ct_normalization(image, lower=1016, upper=1807, mean=1223.2043595897762, std
     
     return image
 
-def fixed_min_max_normalization(image, min_val=0, max_val=2500):
-    """Normalize the image based on fixed min and max values of 0 and 2500."""
-    normalized_img = (image - min_val) / (max_val - min_val)
-    
-    return np.clip(normalized_img, 0, 1)
-
 def shuffle_within_batch(batch):
     random.shuffle(batch)
     
@@ -91,18 +85,6 @@ class ToTensor:
         
         return sample
 
-class RandomGenerator:
-    """Compose random augmentations and preprocessing for training."""
-    def __init__(self, output_size):
-        self.transform = T.Compose([
-            RandomAugmentation(),
-            Resize(output_size),
-            ToTensor()
-        ])
-
-    def __call__(self, sample):
-        return self.transform(sample)
-
 class COCA_dataset(Dataset):
     """Custom dataset for COCA data."""
     def __init__(self, base_dir, list_dir, split, transform=None, train_ratio=0.8):
@@ -117,7 +99,7 @@ class COCA_dataset(Dataset):
             self.sample_list = train_samples if split == "train" else val_samples
         else:
             with open(os.path.join(list_dir, "test_vol.txt"), 'r') as f:
-                self.sample_list = sorted(f.readlines())
+                self.sample_list = f.readlines()
 
     def __len__(self):
         return len(self.sample_list)
