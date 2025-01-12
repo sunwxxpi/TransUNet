@@ -70,7 +70,7 @@ def trainer_coca(args, model, snapshot_path):
     optimizer = optim.AdamW(model.parameters(), lr=base_lr, weight_decay=1e-4)
     
     max_iterations = args.max_epochs * len(trainloader)
-    scheduler = PolyLRScheduler(optimizer, initial_lr=base_lr, max_steps=max_iterations)
+    scheduler = PolyLRScheduler(optimizer, initial_lr=base_lr, max_steps=max_iterations) # TODO: disable scheduler
     
     writer = SummaryWriter(snapshot_path + '/log')
     logging.info("{} iterations per epoch. {} max iterations ".format(len(trainloader), max_iterations))
@@ -126,7 +126,7 @@ def trainer_coca(args, model, snapshot_path):
                 ce_loss = ce_loss_class(iout, label_batch)
                 
                 # 손실 누적
-                loss += (0.5 * dice_loss) + (0.5 * ce_loss)
+                loss += (0.7 * dice_loss) + (0.3 * ce_loss)
             
             optimizer.zero_grad()
             loss.backward()
@@ -212,7 +212,7 @@ def trainer_coca(args, model, snapshot_path):
                     ce_loss = ce_loss_class(iout, label_batch)
                     
                     # 손실 누적
-                    loss += (0.5 * dice_loss) + (0.5 * ce_loss)
+                    loss += (0.7 * dice_loss) + (0.3 * ce_loss)
                 
                 val_dice_loss += dice_loss.item()
                 val_ce_loss += ce_loss.item()
