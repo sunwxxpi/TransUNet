@@ -111,6 +111,8 @@ def trainer_coca(args, model, snapshot_path):
                 print("Supervision Strategy:", ss)
 
             # 손실 초기화
+            sum_dice_loss = 0.0
+            sum_ce_loss = 0.0
             loss = 0.0
 
             # Supervision 전략에 따른 출력 조합 및 손실 계산
@@ -126,6 +128,8 @@ def trainer_coca(args, model, snapshot_path):
                 ce_loss = ce_loss_class(iout, label_batch)
                 
                 # 손실 누적
+                sum_dice_loss += dice_loss
+                sum_ce_loss += ce_loss
                 loss += (0.7 * dice_loss) + (0.3 * ce_loss)
             
             optimizer.zero_grad()
@@ -137,11 +141,11 @@ def trainer_coca(args, model, snapshot_path):
             
             iter_num += 1
             
-            train_dice_loss += dice_loss.item()
-            train_ce_loss += ce_loss.item()
+            train_dice_loss += sum_dice_loss.item()
+            train_ce_loss += sum_ce_loss.item()
             train_loss += loss.item()
 
-            logging.info('epoch %d, iteration %d - dice_loss: %f, ce_loss: %f, loss_total: %f' % (epoch_num, iter_num, dice_loss.item(), ce_loss.item(), loss.item()))
+            logging.info('epoch %d, iteration %d - dice_loss: %f, ce_loss: %f, loss_total: %f' % (epoch_num, iter_num, sum_dice_loss.item(), sum_ce_loss.item(), loss.item()))
             
             if iter_num % 50 == 0:
                 image = image_batch[1, 0:1, :, :]
@@ -198,6 +202,8 @@ def trainer_coca(args, model, snapshot_path):
 
                 # 손실 초기화
                 loss = 0.0
+                sum_dice_loss = 0.0
+                sum_ce_loss = 0.0
 
                 # Supervision 전략에 따른 출력 조합 및 손실 계산
                 for s in ss:
@@ -212,10 +218,12 @@ def trainer_coca(args, model, snapshot_path):
                     ce_loss = ce_loss_class(iout, label_batch)
                     
                     # 손실 누적
+                    sum_dice_loss += dice_loss
+                    sum_ce_loss += ce_loss
                     loss += (0.7 * dice_loss) + (0.3 * ce_loss)
                 
-                val_dice_loss += dice_loss.item()
-                val_ce_loss += ce_loss.item()
+                val_dice_loss += sum_dice_loss.item()
+                val_ce_loss += sum_ce_loss.item()
                 val_loss += loss.item()
 
         # Epoch별 평균 validation 손실 계산 및 기록
